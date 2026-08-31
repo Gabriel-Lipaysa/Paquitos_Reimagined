@@ -1,32 +1,32 @@
 <?php
-session_start();
 include 'config.php';
+include 'db_helper.php';
+include 'security_helper.php';
+include 'auth_helper.php';
 
-if (!isset($_SESSION['user_id'])) {
-    echo '<script type="text/javascript">
-            alert("You are not logged in. Please login first.");
-            window.location = "index.php";
-          </script>';
-    exit();
-}
+requireUserLogin();
 
-$user_id = $_SESSION['user_id'];
+$user_id = (int)$_SESSION['user_id'];
 
+// Handle cart update via AJAX
 if (isset($_POST['cart_id']) && isset($_POST['cart_quantity'])) {
-    $cart_id = mysqli_real_escape_string($conn, $_POST['cart_id']);
-    $quantity = mysqli_real_escape_string($conn, $_POST['cart_quantity']);
+    // Validate inputs
+    $cart_id = SecurityHelper::validateInteger($_POST['cart_id']);
+    $quantity = SecurityHelper::validateInteger($_POST['cart_quantity']);
     
-    if (!is_numeric($quantity) || $quantity < 1) {
+    if ($cart_id === false || $quantity === false || $quantity < 1 || $quantity > 100) {
         echo 'error';
         exit();
     }
 
-    $verify_query = "SELECT * FROM cart WHERE id = '$cart_id' AND user_id = '$user_id'";
-    $verify_result = mysqli_query($conn, $verify_query);
+    // Verify cart item belongs to user using prepared statement
+    $verify_query = "SELECT id FROM cart WHERE id = ? AND user_id = ?";
+    $verify_result = executeQuery($verify_query, "ii", [$cart_id, $user_id]);
 
-    if (mysqli_num_rows($verify_result) > 0) {
-        $update_query = "UPDATE cart SET quantity = '$quantity' WHERE id = '$cart_id' AND user_id = '$user_id'";
-        if (mysqli_query($conn, $update_query)) {
+    if ($verify_result && $verify_result->num_rows > 0) {
+        // Update cart quantity using prepared statement
+        $update_query = "UPDATE cart SET quantity = ? WHERE id = ? AND user_id = ?";
+        if (executeUpdate($update_query, "iii", [$quantity, $cart_id, $user_id])) {
             echo 'success';
         } else {
             echo 'error';
@@ -37,46 +37,54 @@ if (isset($_POST['cart_id']) && isset($_POST['cart_quantity'])) {
     exit();
 }
 
+// Fetch cart items using prepared statement
 $cart_query = "SELECT c.*, sz.sizename, p.name as product_name, p.image
                FROM cart c 
                LEFT JOIN size sz ON c.sizeID = sz.sizeID 
                LEFT JOIN products p ON c.pid = p.id
-               WHERE c.user_id = '$user_id'";
-$cart_result = mysqli_query($conn, $cart_query);
+               WHERE c.user_id = ?
+               ORDER BY c.id DESC";
+$cart_result = executeQuery($cart_query, "i", [$user_id]);
 
 $subtotal = 0;
 $grand_total = 0;
 $cart_item = [];
 
-$select_cart_query = "SELECT * FROM cart WHERE user_id = $user_id";
-
-$result_cart = mysqli_query($conn, $select_cart_query);
-
-if ($result_cart && mysqli_num_rows($result_cart) > 0) {
-    while ($fetch_cart = mysqli_fetch_assoc($result_cart)) {
+// Calculate totals and build cart summary
+if ($cart_result && $cart_result->num_rows > 0) {
+    while ($fetch_cart = $cart_result->fetch_assoc()) {
         $sub_total = ($fetch_cart['price'] * $fetch_cart['quantity']);
         $grand_total += $sub_total;
-        $cart_item[] = $fetch_cart['name'] . ' ( ' . $fetch_cart['price'] . ' x ' . $fetch_cart['quantity'] . ' ) - ';
+        // Safely escape product name for text output
+        $safe_name = SecurityHelper::escape($fetch_cart['name']);
+        $cart_item[] = $safe_name . ' ( ₱' . number_format($fetch_cart['price'], 2) . ' x ' . (int)$fetch_cart['quantity'] . ' ) - ';
     }
     $total_products = implode('', $cart_item);
 } else {
     $total_products = "No items in the cart.";
 }
 
-
+// Handle delete request
 if (isset($_GET['delete'])) {
-    $delete_id = mysqli_real_escape_string($conn, $_GET['delete']);
+    $delete_id = SecurityHelper::validateInteger($_GET['delete']);
     
-    $verify_query = "SELECT * FROM cart WHERE id = '$delete_id' AND user_id = '$user_id'";
-    $verify_result = mysqli_query($conn, $verify_query);
+    if ($delete_id === false) {
+        echo '<script>alert("Invalid cart ID"); window.location = "cart.php";</script>';
+        exit();
+    }
+    
+    // Verify cart item belongs to user
+    $verify_query = "SELECT id FROM cart WHERE id = ? AND user_id = ?";
+    $verify_result = executeQuery($verify_query, "ii", [$delete_id, $user_id]);
 
-    if (mysqli_num_rows($verify_result) > 0) {
-        $delete_query = "DELETE FROM cart WHERE id = '$delete_id' AND user_id = '$user_id'";
-        if (mysqli_query($conn, $delete_query)) {
+    if ($verify_result && $verify_result->num_rows > 0) {
+        // Delete cart item
+        $delete_query = "DELETE FROM cart WHERE id = ? AND user_id = ?";
+        if (executeUpdate($delete_query, "ii", [$delete_id, $user_id])) {
             header('Location: cart.php');
             exit();
         } else {
-            echo 'Error deleting the item.';
+            echo '<script>alert("Error deleting the item"); window.location = "cart.php";</script>';
         }
     } else {
         echo 'Item not found or unauthorized action.';
@@ -168,8 +176,255 @@ if (mysqli_query($conn, $insert_order_query)) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Your Cart</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        .order-container {
+            max-width: 500px;
+            margin: 50px auto;
+            background: #fff;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        h2 {
+            text-align: center;
+            margin-bottom: 20px;
+            color: #333;
+        }
+
+        .grand-total h3 {
+            text-align: center;
+            color: #444;
+            font-weight: bold;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .inputBox {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .inputBox label {
+            margin-bottom: 5px;
+            font-size: 14px;
+            color: #555;
+        }
+
+        .inputBox .box {
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 14px;
+            width: 100%;
+        }
+
+        .inputBox select {
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 10px;
+            background: #28a745;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background 0.3s ease;
+        }
+
+        .btn:hover {
+            background: #218838;
+        }
+
+        .grand-total span {
+            color: #d9534f;
+        }
+
+        .back-button {
+            margin-bottom: 20px;
+        }
+
+        .back-button a {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            color: #333;
+            text-decoration: none;
+            font-size: 1rem;
+            padding: 8px 12px;
+            border-radius: 4px;
+            transition: all 0.3s ease;
+        }
+
+        .back-button a:hover {
+            background: #f5f5f5;
+            color: #4CAF50;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 2rem;
+            color: #333;
+        }
+
+        .cart-container {
+            display: grid;
+            grid-template-columns: 1fr 350px;
+            gap: 2rem;
+        }
+
+        .cart-header {
+            display: grid;
+            grid-template-columns: 3fr 1fr 1fr 1fr 40px;
+            padding: 1rem 0;
+            border-bottom: 1px solid #eee;
+            font-size: 0.875rem;
+            color: #666;
+            text-transform: uppercase;
+        }
+
+        .cart-item {
+            display: grid;
+            grid-template-columns: 3fr 1fr 1fr 1fr 40px;
+            padding: 1.5rem 0;
+            border-bottom: 1px solid #eee;
+            align-items: center;
+        }
+
+        .product-col {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .product-col img {
+            width: 80px;
+            height: 80px;
+            object-fit: cover;
+            border-radius: 4px;
+        }
+
+        .product-details h3 {
+            margin: 0;
+            font-size: 1rem;
+            color: #333;
+        }
+
+        .variant {
+            margin: 0.25rem 0;
+            color: #666;
+            font-size: 0.875rem;
+        }
+
+        .toppings {
+            margin: 0.25rem 0;
+            color: #888;
+            font-size: 0.875rem;
+        }
+
+        .quantity-controls {
+            display: flex;
+            align-items: center;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            width: fit-content;
+        }
+
+        .quantity-btn {
+            border: none;
+            background: none;
+            padding: 0.5rem 1rem;
+            cursor: pointer;
+            color: #666;
+        }
+
+        .quantity-input {
+            width: 40px;
+            text-align: center;
+            border: none;
+            padding: 0.5rem 0;
+        }
+
+        .remove-btn {
+            border: none;
+            background: none;
+            font-size: 1.5rem;
+            color: #999;
+            cursor: pointer;
+            padding: 0.25rem;
+        }
+
+        .order-summary {
+            background: #f8f8f8;
+            padding: 1.5rem;
+            border-radius: 8px;
+        }
+
+        .summary-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 1rem 0;
+            border-bottom: 1px solid #eee;
+        }
+
+        .coupon-row {
+            padding: 1rem 0;
+            border-bottom: 1px solid #eee;
+        }
+
+        .coupon-btn {
+            border: none;
+            background: none;
+            color: #4CAF50;
+            cursor: pointer;
+            padding: 0;
+        }
+
+        .total {
+            font-weight: bold;
+            font-size: 1.125rem;
+        }
+
+        .checkout-btn {
+            width: 100%;
+            padding: 1rem;
+            background: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            margin-top: 1rem;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .checkout-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        .empty-cart {
+            text-align: center;
+            padding: 2rem;
+            color: #666;
+            grid-column: 1 / -1;
+        }
+    </style>
 </head>
 
 <body>
@@ -296,368 +551,7 @@ if (mysqli_query($conn, $insert_order_query)) {
             </div>
         </div>
     </div>
+    <script src="js/api.js"></script>
+    <script src="js/cart.js"></script>
 </body>
-
 </html>
-
-
-    <script>
-   function updateQuantity(itemId, change) {
-    const input = document.getElementById('qty_' + itemId);
-    const newValue = parseInt(input.value) + change;
-    
-    if (newValue >= 1) {
-        const formData = new FormData();
-        formData.append('cart_id', itemId);
-        formData.append('cart_quantity', newValue);
-
-        fetch('cart.php', {
-            method: 'POST',
-            body: formData
-        })
-        .then(response => response.text())
-        .then(data => {
-            if (data === 'success') {
-                window.location.reload();
-            } else {
-                console.log('Server response:', data);
-            }
-        })
-        .catch(error => {
-            console.log('Error:', error);
-        });
-    }
-}
-
-document.querySelectorAll('.quantity-input').forEach(input => {
-    input.addEventListener('change', function() {
-        const itemId = this.id.replace('qty_', '');
-        const change = parseInt(this.value) - parseInt(this.defaultValue);
-        updateQuantity(itemId, change);
-    });
-});
-
-
-document.querySelectorAll('.quantity-input').forEach(input => {
-    input.addEventListener('change', function() {
-        const itemId = this.id.replace('qty_', '');
-        const change = parseInt(this.value) - parseInt(this.defaultValue);
-        updateQuantity(itemId, change);
-    });
-});
-
-        function removeItem(itemId) {
-            if (confirm('Are you sure you want to remove this item from your cart?')) {
-                window.location.href = 'cart.php?delete=' + itemId;
-            }
-        }
-    </script>
-
-</body>
-
-</html>
-
-    <script>
-   function updateQuantity(itemId, change) {
-    const input = document.getElementById('qty_' + itemId);
-    const newValue = parseInt(input.value) + change;
-    
-    if (newValue >= 1) {
-        const formData = new FormData();
-        formData.append('cart_id', itemId);
-        formData.append('cart_quantity', newValue);
-
-        fetch('cart.php', {
-            method: 'POST',
-            body: formData
-        })
-        .then(response => response.text())
-        .then(data => {
-            if (data === 'success') {
-                window.location.reload();
-            } else {
-                console.log('Server response:', data);
-            }
-        })
-        .catch(error => {
-            console.log('Error:', error);
-        });
-    }
-}
-
-document.querySelectorAll('.quantity-input').forEach(input => {
-    input.addEventListener('change', function() {
-        const itemId = this.id.replace('qty_', '');
-        const change = parseInt(this.value) - parseInt(this.defaultValue);
-        updateQuantity(itemId, change);
-    });
-});
-
-document.querySelectorAll('.quantity-input').forEach(input => {
-    input.addEventListener('change', function() {
-        const itemId = this.id.replace('qty_', '');
-        const change = parseInt(this.value) - parseInt(this.defaultValue);
-        updateQuantity(itemId, change);
-    });
-});
-
-        function removeItem(itemId) {
-            if (confirm('Are you sure you want to remove this item from your cart?')) {
-                window.location.href = 'cart.php?delete=' + itemId;
-            }
-        }
-    </script>
-
-</body>
-
-</html>
-
-<style>
-    .order-container {
-        max-width: 500px;
-        margin: 50px auto;
-        background: #fff;
-        border-radius: 8px;
-        padding: 20px;
-        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-    }
-
-    h2 {
-        text-align: center;
-        margin-bottom: 20px;
-        color: #333;
-    }
-
-    .grand-total h3 {
-        text-align: center;
-        color: #444;
-        font-weight: bold;
-    }
-
-    .form-group {
-        display: flex;
-        flex-direction: column;
-        gap: 15px;
-    }
-
-    .inputBox {
-        display: flex;
-        flex-direction: column;
-    }
-
-    .inputBox label {
-        margin-bottom: 5px;
-        font-size: 14px;
-        color: #555;
-    }
-
-    .inputBox .box {
-        padding: 10px;
-        border: 1px solid #ccc;
-        border-radius: 5px;
-        font-size: 14px;
-        width: 100%;
-    }
-
-    .inputBox select {
-        padding: 10px;
-        border: 1px solid #ccc;
-        border-radius: 5px;
-        font-size: 14px;
-    }
-
-    .btn {
-        width: 100%;
-        padding: 10px;
-        background: #28a745;
-        color: #fff;
-        border: none;
-        border-radius: 5px;
-        font-size: 16px;
-        cursor: pointer;
-        transition: background 0.3s ease;
-    }
-
-    .btn:hover {
-        background: #218838;
-    }
-
-    .grand-total span {
-        color: #d9534f;
-    }
-
-    .back-button {
-        margin-bottom: 20px;
-    }
-
-    .back-button a {
-        display: inline-flex;
-        align-items: center;
-        gap: 8px;
-        color: #333;
-        text-decoration: none;
-        font-size: 1rem;
-        padding: 8px 12px;
-        border-radius: 4px;
-        transition: all 0.3s ease;
-    }
-
-    .back-button a:hover {
-        background: #f5f5f5;
-        color: #4CAF50;
-    }
-
-    .container {
-        max-width: 1200px;
-        margin: 0 auto;
-        padding: 2rem;
-    }
-
-    h1 {
-        font-size: 2.5rem;
-        margin-bottom: 2rem;
-        color: #333;
-    }
-
-    .cart-container {
-        display: grid;
-        grid-template-columns: 1fr 350px;
-        gap: 2rem;
-    }
-
-    .cart-header {
-        display: grid;
-        grid-template-columns: 3fr 1fr 1fr 1fr 40px;
-        padding: 1rem 0;
-        border-bottom: 1px solid #eee;
-        font-size: 0.875rem;
-        color: #666;
-        text-transform: uppercase;
-    }
-
-    .cart-item {
-        display: grid;
-        grid-template-columns: 3fr 1fr 1fr 1fr 40px;
-        padding: 1.5rem 0;
-        border-bottom: 1px solid #eee;
-        align-items: center;
-    }
-
-    .product-col {
-        display: flex;
-        align-items: center;
-        gap: 1rem;
-    }
-
-    .product-col img {
-        width: 80px;
-        height: 80px;
-        object-fit: cover;
-        border-radius: 4px;
-    }
-
-    .product-details h3 {
-        margin: 0;
-        font-size: 1rem;
-        color: #333;
-    }
-
-    .variant {
-        margin: 0.25rem 0;
-        color: #666;
-        font-size: 0.875rem;
-    }
-
-    .toppings {
-        margin: 0.25rem 0;
-        color: #888;
-        font-size: 0.875rem;
-    }
-
-    .quantity-controls {
-        display: flex;
-        align-items: center;
-        border: 1px solid #ddd;
-        border-radius: 4px;
-        width: fit-content;
-    }
-
-    .quantity-btn {
-        border: none;
-        background: none;
-        padding: 0.5rem 1rem;
-        cursor: pointer;
-        color: #666;
-    }
-
-    .quantity-input {
-        width: 40px;
-        text-align: center;
-        border: none;
-        padding: 0.5rem 0;
-    }
-
-    .remove-btn {
-        border: none;
-        background: none;
-        font-size: 1.5rem;
-        color: #999;
-        cursor: pointer;
-        padding: 0.25rem;
-    }
-
-    .order-summary {
-        background: #f8f8f8;
-        padding: 1.5rem;
-        border-radius: 8px;
-    }
-
-    .summary-row {
-        display: flex;
-        justify-content: space-between;
-        padding: 1rem 0;
-        border-bottom: 1px solid #eee;
-    }
-
-    .coupon-row {
-        padding: 1rem 0;
-        border-bottom: 1px solid #eee;
-    }
-
-    .coupon-btn {
-        border: none;
-        background: none;
-        color: #4CAF50;
-        cursor: pointer;
-        padding: 0;
-    }
-
-    .total {
-        font-weight: bold;
-        font-size: 1.125rem;
-    }
-
-    .checkout-btn {
-        width: 100%;
-        padding: 1rem;
-        background: #4CAF50;
-        color: white;
-        border: none;
-        border-radius: 4px;
-        margin-top: 1rem;
-        cursor: pointer;
-        font-weight: bold;
-    }
-
-    .checkout-btn:disabled {
-        background: #ccc;
-        cursor: not-allowed;
-    }
-
-    .empty-cart {
-        text-align: center;
-        padding: 2rem;
-        color: #666;
-        grid-column: 1 / -1;
-    }
-</style>

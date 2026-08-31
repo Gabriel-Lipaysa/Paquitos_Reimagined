@@ -473,58 +473,23 @@ if (isset($_POST['update'])) {
                 </div>
             </div>
 
+            <script src="js/admin_table.js"></script>
             <script>
+                // Wire up shared utilities
                 function deleteCustomization(id) {
-                    if (confirm('Are you sure you want to delete this size?')) {
-                        window.location.href = `?delete=${id}`;
-                    }
-                }
-
-                // Add sorting functionality
-                document.querySelectorAll('th').forEach(headerCell => {
-                    headerCell.addEventListener('click', () => {
-                        const tableElement = headerCell.closest('table');
-                        const headerIndex = Array.prototype.indexOf.call(headerCell.parentElement.children, headerCell);
-                        const currentIsAscending = headerCell.classList.contains('th-sort-asc');
-
-                        sortTableByColumn(tableElement, headerIndex, !currentIsAscending);
-                    });
-                });
-
-                // Function to sort table
-                function sortTableByColumn(table, column, asc = true) {
-                    const dirModifier = asc ? 1 : -1;
-                    const tBody = table.tBodies[0];
-                    const rows = Array.from(tBody.querySelectorAll('tr'));
-
-                    // Sort each row
-                    const sortedRows = rows.sort((a, b) => {
-                        const aColText = a.querySelector(`td:nth-child(${column + 1})`).textContent.trim();
-                        const bColText = b.querySelector(`td:nth-child(${column + 1})`).textContent.trim();
-
-                        return aColText > bColText ? (1 * dirModifier) : (-1 * dirModifier);
-                    });
-
-                    // Remove existing rows
-                    while (tBody.firstChild) {
-                        tBody.removeChild(tBody.firstChild);
-                    }
-
-                    // Re-add sorted rows
-                    tBody.append(...sortedRows);
-
-                    // Remember how the column is currently sorted
-                    table.querySelectorAll('th').forEach(th => th.classList.remove('th-sort-asc', 'th-sort-desc'));
-                    table.querySelector(`th:nth-child(${column + 1})`).classList.toggle('th-sort-asc', asc);
-                    table.querySelector(`th:nth-child(${column + 1})`).classList.toggle('th-sort-desc', !asc);
+                    AdminTable.confirmDelete('size', id);
                 }
 
                 function editSize(sizeID, sizename, sizeprice) {
-                    document.getElementById('modal_sizeID').value = sizeID;
-                    document.getElementById('modal_sizename').value = sizename;
-                    document.getElementById('modal_sizeprice').value = sizeprice;
-
+                    AdminTable.populateModal({
+                        'modal_sizeID': sizeID,
+                        'modal_sizename': sizename,
+                        'modal_sizeprice': sizeprice
+                    });
                 }
+
+                // Enable table sorting
+                AdminTable.initSorting();
             </script>
     </main>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>

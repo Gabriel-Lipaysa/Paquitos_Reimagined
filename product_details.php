@@ -1,27 +1,51 @@
 <?php
 include 'config.php';
-
-$productId = $_POST['pid'] ?? null;
+include 'db_helper.php';
+include 'security_helper.php';
 
 session_start();
 $is_logged_in = isset($_SESSION['user_id']) ? true : false; 
 
-if (!$productId) {
-    header('Location: menu.php');
+// Validate product ID
+$productId = isset($_POST['pid']) ? SecurityHelper::validateInteger($_POST['pid']) : null;
+
+if (!$productId || $productId === false) {
+    header('Location: customer_menu.php');
     exit();
 }
 
+// Use prepared statement to prevent SQL injection
+$product_query = "SELECT * FROM products WHERE id = ?";
+$product_result = executeQuery($product_query, "i", [$productId]);
 
+if (!$product_result) {
+    die("Database error: " . getError());
+}
 
-$product_query = "SELECT * FROM products WHERE id = $productId";
-$product_result = mysqli_query($conn, $product_query);
-$product = mysqli_fetch_assoc($product_result);
+$product = $product_result->fetch_assoc();
 
-$size_query = "SELECT * FROM size";
-$size_result = mysqli_query($conn, $size_query);
+// Check if product exists
+if (!$product) {
+    header('Location: customer_menu.php');
+    exit();
+}
 
-$customization_query = "SELECT * FROM customization";
-$customization_result = mysqli_query($conn, $customization_query);
+// Fetch sizes
+$size_query = "SELECT * FROM size ORDER BY sizeID ASC";
+$size_result = executeQuery($size_query);
+
+if (!$size_result) {
+    $size_result = false; // Safe fallback
+}
+
+// Fetch customizations
+$customization_query = "SELECT * FROM customization ORDER BY cusID ASC";
+$customization_result = executeQuery($customization_query);
+
+if (!$customization_result) {
+    $customization_result = false; // Safe fallback
+}
+
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -284,25 +308,25 @@ $customization_result = mysqli_query($conn, $customization_query);
 
     </style>
 </head>
-<body>
+<body data-user-id="<?php echo $is_logged_in ? (int)$_SESSION['user_id'] : ''; ?>">
     <div class="back-button-container">
         <a href="customer_menu.php" class="back-button">Back to Menu</a>
     </div>
     <div class="container">
         <div class="left-section">
-            <img src="uploaded_img/<?php echo $product['image']; ?>" alt="<?php echo $product['name']; ?>" class="product-image">
+            <img src="uploaded_img/<?php echo SecurityHelper::escape($product['image']); ?>" alt="<?php echo SecurityHelper::escape($product['name']); ?>" class="product-image">
 
-            <h1 class="product-title"><?php echo $product['name']; ?></h1>
+            <h1 class="product-title"><?php echo SecurityHelper::escape($product['name']); ?></h1>
             <p class="starts">starts at </p>
             <div class="price"> ₱<?php echo number_format($product['price'], 2); ?></div>
-            <p class="product-description"><?php echo $product['description']; ?></p>
+            <p class="product-description"><?php echo SecurityHelper::escape($product['description'] ?? ''); ?></p>
 
         </div>
 
         <div class="right-section">
-            <form action="process_order.php" method="POST">
-                <input type="hidden" name="product_id" value="<?php echo $product['id']; ?>">
-                <input type="hidden" name="base_price" value="<?php echo $product['price']; ?>">
+            <form action="process_order.php" method="POST" data-base-price="<?php echo SecurityHelper::escape($product['price']); ?>">
+                <input type="hidden" name="product_id" value="<?php echo SecurityHelper::escape($product['id']); ?>">
+                <input type="hidden" name="base_price" value="<?php echo SecurityHelper::escape($product['price']); ?>">
                 <input type="hidden" name="selected_size_price" id="selected_size_price" value="0">
                 <h2 class="section-title"><span class="required-mark">*</span>Sizes</h2>
                 <div class="size-options">
@@ -345,85 +369,14 @@ $customization_result = mysqli_query($conn, $customization_query);
                             <button type="submit" class="order-btn <?php echo (!$is_logged_in ? 'disabled-btn' : 'enabled-btn'); ?>" id="order-btn">
                                 Add to Cart
                             </button>
-                            <script>
-                                document.getElementById('order-btn').addEventListener('click', function(event) {
-                                    if (!<?php echo json_encode($is_logged_in); ?>) {
-                                        event.preventDefault();
-                                        alert('You must be logged in to add items to the cart.');
-                                    }
-                                });
-                            </script>
                         </div>
                     </div>
                 </div>
             </form>
         </div>
     </div>
+
+    <script src="js/auth.js"></script>
+    <script src="js/product_details.js"></script>
 </body>
-
-    <script>
-        function updateQuantity(change) {
-            const input = document.getElementById('quantity-input');
-            const newValue = parseInt(input.value) + change;
-            if (newValue >= 1) {
-                input.value = newValue;
-                updateTotal();
-            }
-        }
-
-        function updateTotal() {
-            // Get base price of the product
-            const basePrice = <?php echo $product['price']; ?>;
-            const quantity = parseInt(document.getElementById('quantity-input').value);
-
-            // Get selected size price
-            let sizePrice = 0;
-            const selectedSize = document.querySelector('input[name="size"]:checked');
-            if (selectedSize) {
-                sizePrice = parseFloat(selectedSize.dataset.price) || 0;
-            }
-
-            // Get selected toppings total
-            let toppingsTotal = 0;
-            document.querySelectorAll('.topping-item input[type="checkbox"]:checked').forEach(checkbox => {
-                const priceElement = checkbox.closest('.topping-item').querySelector('.topping-price');
-                if (priceElement) {
-                    const priceText = priceElement.textContent;
-                    const price = parseFloat(priceText.replace(/[^0-9.]/g, ''));
-                    if (!isNaN(price)) {
-                        toppingsTotal += price;
-                    }
-                }
-            });
-
-            // Calculate total
-            const total = (basePrice + sizePrice + toppingsTotal) * quantity;
-            document.getElementById('total-price').textContent = total.toFixed(2);
-        }
-
-        // Add event listeners for size selection
-        document.querySelectorAll('input[name="size"]').forEach(radio => {
-            radio.addEventListener('change', updateTotal);
-        });
-
-        // Add event listeners for toppings
-        document.querySelectorAll('.topping-item input[type="checkbox"]').forEach(checkbox => {
-            checkbox.addEventListener('change', function() {
-                const parentDiv = checkbox.closest('.topping-item');
-                if (checkbox.checked) {
-                    parentDiv.classList.add('selected');
-                } else {
-                    parentDiv.classList.remove('selected');
-                }
-                updateTotal();
-            });
-        });
-
-        // Initial total calculation
-        updateTotal();
-    </script>
-
-
-</body>
-
 </html>
