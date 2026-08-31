@@ -1,12 +1,9 @@
 <?php
 include 'config.php';
-session_start();
+include 'auth_helper.php';
 
-$admin_id = $_SESSION['admin_id'];
-
-if (!isset($admin_id)) {
-    header('location:admin_login.php');
-}
+requireAdminLogin();
+$admin_id = getCurrentAdminId();
 
 
 $searchQuery = '';
@@ -627,175 +624,9 @@ if (isset($_GET['delete'])) {
 
             </div>
 
-            <script type="text/javascript">
-                function alertUserEmail(email) {
-                    alert("The email that will be sent is to: " + email);
-                }
-            </script>
-            <script>
-                async function updatePaymentStatus(button) {
-                    try {
-                        const confirmComplete = confirm('Are you sure? Once marked as completed, this cannot be changed.');
-                        if (!confirmComplete) return;
-
-                        const form = button.closest('form');
-                        const orderID = form.querySelector('input[name="order_id"]').value;
-                        const cell = button.closest('td');
-                        const errorDiv = cell.querySelector('.error-message');
-
-                        button.disabled = true;
-                        button.textContent = 'Processing...';
-
-                        const formData = new FormData();
-                        formData.append('order_id', orderID);
-                        formData.append('update_payment', '1');
-                        formData.append('ajax', '1');
-
-                        const response = await fetch(window.location.href, {
-                            method: 'POST',
-                            body: formData
-                        });
-
-                        if (!response.ok) {
-                            throw new Error(`HTTP error! status: ${response.status}`);
-                        }
-
-                        const data = await response.json();
-                        console.log('Server response:', data);
-
-                        if (data.status === 'success') {
-                            const completedBtn = document.createElement('button');
-                            completedBtn.className = 'completed-btn';
-                            completedBtn.disabled = true;
-                            completedBtn.textContent = 'Completed';
-
-                            cell.innerHTML = '';
-                            cell.appendChild(completedBtn);
-
-                            alert(data.message || 'Payment status updated and sales data inserted!');
-                        } else {
-                            throw new Error(data.message || 'Failed to update payment status');
-                        }
-
-                    } catch (error) {
-                        console.error('Error in updatePaymentStatus:', error);
-
-                        const errorDiv = button.closest('td').querySelector('.error-message');
-                        if (errorDiv) {
-                            errorDiv.textContent = error.message;
-                        }
-
-                        button.disabled = false;
-                        button.textContent = 'Mark as Completed';
-
-                        alert('Error updating payment status: ' + error.message);
-                    }
-                }
-
-                let debounceTimeout;
-
-                const searchInput = document.querySelector('input[name="search_query"]');
-                const statusFilter = document.querySelector('select[name="payment_status_filter"]');
-
-                function performSearch() {
-                    const searchTerm = searchInput.value.toLowerCase();
-                    const filterValue = statusFilter.value.toLowerCase();
-
-                    document.querySelectorAll('table tbody tr').forEach(row => {
-                        const name = row.querySelector('td:nth-child(3)').textContent.toLowerCase();
-                        const address = row.querySelector('td:nth-child(5)').textContent.toLowerCase();
-
-                        const statusCell = row.querySelector('td:nth-child(9)');
-                        const completedButton = statusCell.querySelector('.completed-btn');
-                        const pendingButton = statusCell.querySelector('.mark-completed-btn');
-
-                        let currentStatus = '';
-                        if (completedButton) {
-                            currentStatus = 'completed';
-                        } else if (pendingButton) {
-                            currentStatus = 'pending';
-                        }
-
-                        const matchesSearch = name.includes(searchTerm) || address.includes(searchTerm);
-                        const matchesFilter = !filterValue || currentStatus === filterValue;
-
-                        row.style.display = matchesSearch && matchesFilter ? '' : 'none';
-                    });
-
-                    updateTotalCount();
-                }
-
-                document.addEventListener('DOMContentLoaded', function() {
-                    performSearch();
-                });
-
-                function updateTotalCount() {
-                    const visibleRows = document.querySelectorAll('table tbody tr[style=""]').length;
-                    document.querySelector('.total-items').textContent = `Total: ${visibleRows}`;
-                }
-
-                searchInput.addEventListener('input', function() {
-                    clearTimeout(debounceTimeout);
-
-                    debounceTimeout = setTimeout(performSearch, 300);
-                });
-
-                statusFilter.addEventListener('change', performSearch);
-
-                function updateTotalCount() {
-
-                    const allRows = document.querySelectorAll('table tbody tr');
-
-                    const visibleRows = Array.from(allRows).filter(row => row.style.display !== 'none');
-
-                    document.querySelector('.total-items').textContent = `Total: ${visibleRows.length}`;
-                }
-
-                document.addEventListener('DOMContentLoaded', function() {
-                    updateTotalCount();
-                });
-
-                searchInput.addEventListener('input', function() {
-                    clearTimeout(debounceTimeout);
-                    debounceTimeout = setTimeout(() => {
-                        performSearch();
-                        updateTotalCount();
-                    }, 300);
-                });
-
-                statusFilter.addEventListener('change', function() {
-                    performSearch();
-                    updateTotalCount();
-                });
-
-                searchInput.addEventListener('input', performSearch);
-                statusFilter.addEventListener('change', performSearch);
-
-                document.querySelectorAll('form').forEach(form => {
-                    form.addEventListener('submit', async function(e) {
-                        e.preventDefault();
-                        const formData = new FormData(this);
-                        const paymentStatus = this.querySelector('select[name="payment_status"]').value;
-
-                        try {
-                            const response = await fetch('admin_orders.php', {
-                                method: 'POST',
-                                body: formData
-                            });
-
-                            if (response.ok) {
-                                if (paymentStatus === 'completed') {
-                                    this.innerHTML = '<span class="completed-status">Completed</span>';
-                                    alert('Payment status updated and sales data inserted!');
-                                    location.reload();
-                                }
-                            }
-                        } catch (error) {
-                            alert('Error updating payment status');
-                        }
-                    });
-                });
-            </script>
+            <script src="js/api.js"></script>
+            <script src="js/admin_table.js"></script>
+            <script src="js/admin_orders.js"></script>
             <script src="js/admin_script.js"></script>
     </main>
 </body>

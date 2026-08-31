@@ -1,53 +1,71 @@
 <?php
 include 'config.php';
-session_start();
+include 'auth_helper.php';
+include 'db_helper.php';
+include 'security_helper.php';
+include 'file_upload_handler.php';
+include 'ui_helper.php';
 
-$admin_id = $_SESSION['admin_id'];
-
-if (!isset($admin_id)) {
-   header('location:admin_login.php');
-}
-
+requireAdminLogin();
+$admin_id = getCurrentAdminId();
 
 if (isset($_POST['add_product'])) {
-   $name = $_POST['name'];
-   $name = filter_var($name, FILTER_SANITIZE_STRING);
-
-   $price = $_POST['price'];
-   $price = filter_var($price, FILTER_SANITIZE_STRING);
-
-   $quantity = $_POST['quantity'];
-   $quantity = filter_var($quantity, FILTER_SANITIZE_NUMBER_INT);
-
-   $description = $_POST['description'];
-   $description = filter_var($description, FILTER_SANITIZE_STRING);
-
-   $image = $_FILES['image']['name'];
-   $image = filter_var($image, FILTER_SANITIZE_STRING);
-   $image_size = $_FILES['image']['size'];
-   $image_tmp_name = $_FILES['image']['tmp_name'];
-   $image_folder = 'uploaded_img/' . $image;
-
-   $created_at = date('Y-m-d H:i:s');
-
-   $select_product_query = "SELECT * FROM `products` WHERE name = '$name'";
-   $select_product_result = mysqli_query($conn, $select_product_query);
-
-   if (mysqli_num_rows($select_product_result) > 0) {
-      $message[] = 'Product name already exists!';
+   // Validate required fields
+   $required_fields = ['name', 'price', 'quantity', 'description'];
+   $missing = SecurityHelper::validateRequired($_POST, $required_fields);
+   
+   if (!empty($missing)) {
+      addToastMessage('Please fill in all required fields!', 'warning');
    } else {
-      if ($image_size > 2000000) {
-         $message[]  = 'Image size is too large!';
+      // Sanitize and validate input
+      $name = SecurityHelper::sanitizeString($_POST['name']);
+      $price = SecurityHelper::sanitizeString($_POST['price']);
+      $quantity = SecurityHelper::sanitizeString($_POST['quantity']);
+      $description = SecurityHelper::sanitizeString($_POST['description']);
+      
+      // Validate data types
+      if (!SecurityHelper::validateString($name, 1, 100)) {
+         addToastMessage('Product name must be between 1-100 characters!', 'error');
+      } else if (!is_numeric($price) || $price < 0) {
+         addToastMessage('Price must be a positive number!', 'error');
+      } else if (!is_numeric($quantity) || $quantity < 0) {
+         addToastMessage('Quantity must be a positive number!', 'error');
+      } else if (!SecurityHelper::validateString($description, 0, 500)) {
+         addToastMessage('Description must not exceed 500 characters!', 'error');
       } else {
-         $insert_product_query = "INSERT INTO `products`(name, price, quantity, description, image, date) 
-                                  VALUES('$name', '$price', '$quantity', '$description', '$image', '$created_at')";
-         $insert_product_result = mysqli_query($conn, $insert_product_query);
-
-         if ($insert_product_result) {
-            move_uploaded_file($image_tmp_name, $image_folder);
-            $message[]  = 'New product added!';
+         // Check if product already exists using prepared statement
+         $check_query = "SELECT id FROM `products` WHERE name = ?";
+         $result = executeQuery($check_query, "s", [$name]);
+         
+         if (!$result) {
+            addToastMessage('Database error occurred!', 'error');
+         } else if ($result->num_rows > 0) {
+            addToastMessage('Product name already exists!', 'error');
          } else {
-            $message[] = 'Failed to add product!';
+            // Handle file upload
+            $uploader = new FileUploadHandler();
+            $upload_result = $uploader->upload($_FILES['image']);
+            
+            if ($upload_result['success']) {
+               $image_name = $upload_result['filename'];
+               $created_at = date('Y-m-d H:i:s');
+               
+               // Insert product using prepared statement
+               $insert_query = "INSERT INTO `products` (name, price, quantity, description, image, date) 
+                               VALUES (?, ?, ?, ?, ?, ?)";
+               
+               if (executeUpdate($insert_query, "sdiiss", 
+                  [$name, (float)$price, (int)$quantity, $description, $image_name, $created_at])) {
+                  addToastMessage('New product added successfully! Redirecting...', 'success');
+                  header('Refresh: 2; url=admin_products.php');
+               } else {
+                  addToastMessage('Failed to add product to database!', 'error');
+                  // Remove uploaded file if DB insert fails
+                  $uploader->delete($image_name);
+               }
+            } else {
+               addToastMessage($upload_result['error'], 'error');
+            }
          }
       }
    }
@@ -66,6 +84,7 @@ if (isset($_POST['add_product'])) {
    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.1/css/all.min.css">
    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
    <link rel="stylesheet" href="css/admin_style.css">
+   <link rel="stylesheet" href="css/toast.css">
    <style>
    html,
       body {
@@ -253,45 +272,45 @@ if (isset($_POST['add_product'])) {
 
       <section class="add-products">
          <h1 class="heading">Add New Product</h1>
-
+         
+         <?php echo displayToastMessages(); ?>
 
          <div class="form-container">
-            <form method="POST" enctype="multipart/form-data">
+            <form method="POST" enctype="multipart/form-data" id="addProductForm">
                <div class="form-row">
                   <div class="image-column">
-                     <div class="image-preview" id="imagePreview">
-                        <span>Preview Image</span>
-                     </div>
-                     <div class="file-input-container">
-                        <input type="file" name="image" accept="image/*" class="form-control" required>
+                     <div class="form-group">
+                        <label class="form-label">
+                           Product Image <span class="required-asterisk">*</span>
+                           <span class="field-indicator required">Required</span>
+                        </label>
+                        <div class="image-preview" id="imagePreview">
+                           <span>📷 Click to preview</span>
+                        </div>
+                        <div class="file-input-container">
+                           <input type="file" name="image" accept="image/*" class="form-control form-input" required style="padding: 8px;">
+                           <small class="form-hint">JPG, PNG, GIF, WEBP (Max 5MB)</small>
+                        </div>
                      </div>
                   </div>
                   <div class="details-column">
-                     <input type="text" placeholder="Enter product name" name="name" required>
-                     <input type="number" placeholder="Enter product price" name="price" required>
-                     <input type="number" placeholder="Enter product quantity" name="quantity" required>
-                     <textarea class="box" required maxlength="500" placeholder="Enter product description" name="description"></textarea>
-
-
-                     <button type="submit" name="add_product" class="submit-btn">Add Product</button>
+                     <?php echo formField('name', 'Product Name', 'text', true, 'e.g., Margherita Pizza', ''); ?>
+                     <?php echo formField('price', 'Price (₱)', 'number', true, 'e.g., 299.99', '', ['step' => '0.01', 'min' => '0']); ?>
+                     <?php echo formField('quantity', 'Stock Quantity', 'number', true, 'e.g., 50', '', ['min' => '0']); ?>
+                     <?php echo formTextarea('description', 'Description', false, 'Enter product details...', '', 4); ?>
+                     <button type="submit" name="add_product" class="form-button">
+                        <i class="fas fa-plus"></i> Add Product
+                     </button>
                   </div>
                </div>
             </form>
          </div>
       </section>
    </main>
+   <script src="js/admin_table.js"></script>
    <script>
-
       document.querySelector('input[name="image"]').addEventListener('change', function(e) {
-         const preview = document.getElementById('imagePreview');
-         const file = e.target.files[0];
-         if (file) {
-            const reader = new FileReader();
-            reader.onload = function(e) {
-               preview.innerHTML = `<img src="${e.target.result}" alt="Preview">`;
-            }
-            reader.readAsDataURL(file);
-         }
+         AdminTable.previewImage(e, 'imagePreview');
       });
    </script>
    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>

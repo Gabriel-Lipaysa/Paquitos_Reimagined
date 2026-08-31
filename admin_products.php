@@ -1,13 +1,9 @@
 <?php
 include 'config.php';
-session_start();
+include 'auth_helper.php';
 
-$admin_id = $_SESSION['admin_id'];
-
-if (!isset($admin_id)) {
-   header('location:admin_login.php');
-   exit();
-}
+requireAdminLogin();
+$admin_id = getCurrentAdminId();
 
 
 if (isset($_GET['delete'])) {
@@ -421,8 +417,8 @@ if (isset($_POST['update_product'])) {
                               </td>
                               <td><?= htmlspecialchars($fetch_products['name']); ?></td>
                               <td>₱<?= number_format($fetch_products['price'], 2); ?></td>
-                              <td><?= $fetch_products['quantity']; ?></td>
-                              <td><?= htmlspecialchars($fetch_products['description']); ?></td>
+                              <td><?= $fetch_products['quantity'] ?? 'N/A'; ?></td>
+                              <td><?= htmlspecialchars($fetch_products['description'] ?? ''); ?></td>
                               <td>
                                  <div class="d-flex">
                                     <button type="button" class="btn btn-success btn-action"
@@ -558,100 +554,80 @@ if (isset($_POST['update_product'])) {
 
 
       <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+      <script src="js/admin_table.js"></script>
       <script>
-         // Search functionality
-         document.addEventListener('DOMContentLoaded', function() {
-            const searchInput = document.getElementById('searchInput');
-            const filterBadges = document.querySelectorAll('.filter-badge');
-            const productRows = document.querySelectorAll('.product-row');
-            
-            // Initialize counts
-            updateProductCounts();
+      // Initialize product search/filter
+      document.addEventListener('DOMContentLoaded', function() {
+          const productRows = document.querySelectorAll('.product-row');
+          const filterBadges = document.querySelectorAll('.filter-badge');
+          
+          // Initialize counts
+          updateProductCounts();
 
-            // Search functionality
-            searchInput.addEventListener('input', function() {
-                filterProducts();
-            });
+          // Search functionality using AdminTable
+          AdminTable.initSearch({
+              inputSelector: '#searchInput',
+              rowSelector: '.product-row',
+              searchColumns: [2, 5],
+              onFilter: function(visibleCount) {
+                  document.getElementById('totalProducts').textContent = visibleCount;
+              }
+          });
 
-            // Filter badge clicks
-            filterBadges.forEach(badge => {
-                badge.addEventListener('click', function() {
-                    filterBadges.forEach(b => b.classList.remove('active'));
-                    this.classList.add('active');
-                    filterProducts();
-                });
-            });
+          // Filter badge clicks
+          filterBadges.forEach(badge => {
+              badge.addEventListener('click', function() {
+                  filterBadges.forEach(b => b.classList.remove('active'));
+                  this.classList.add('active');
+                  filterProducts();
+              });
+          });
 
-            function filterProducts() {
-                const searchTerm = searchInput.value.toLowerCase();
-                const activeFilter = document.querySelector('.filter-badge.active').dataset.filter;
-                let visibleCount = 0;
-                let lowStockCount = 0;
+          function filterProducts() {
+              const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+              const activeFilter = document.querySelector('.filter-badge.active').dataset.filter;
+              let visibleCount = 0;
+              let lowStockCount = 0;
 
-                productRows.forEach(row => {
-                    const name = row.querySelector('td:nth-child(2)').textContent.toLowerCase();
-                    const description = row.querySelector('td:nth-child(5)').textContent.toLowerCase();
-                    const quantity = parseInt(row.querySelector('td:nth-child(4)').textContent);
-                    
-                    // Mark low stock
-                    if (quantity < 10) {
-                        row.classList.add('low-stock-row');
-                        lowStockCount++;
-                    } else {
-                        row.classList.remove('low-stock-row');
-                    }
+              productRows.forEach(row => {
+                  const name = row.querySelector('td:nth-child(2)').textContent.toLowerCase();
+                  const description = row.querySelector('td:nth-child(5)').textContent.toLowerCase();
+                  const quantity = parseInt(row.querySelector('td:nth-child(4)').textContent);
+                  
+                  if (quantity < 10) {
+                      row.classList.add('low-stock-row');
+                      lowStockCount++;
+                  } else {
+                      row.classList.remove('low-stock-row');
+                  }
 
-                    const matchesSearch = name.includes(searchTerm) || description.includes(searchTerm);
-                    const matchesFilter = activeFilter === 'all' || 
-                                       (activeFilter === 'low-stock' && quantity < 10);
+                  const matchesSearch = name.includes(searchTerm) || description.includes(searchTerm);
+                  const matchesFilter = activeFilter === 'all' || 
+                                     (activeFilter === 'low-stock' && quantity < 10);
 
-                    if (matchesSearch && matchesFilter) {
-                        row.style.display = '';
-                        visibleCount++;
-                    } else {
-                        row.style.display = 'none';
-                    }
-                });
+                  if (matchesSearch && matchesFilter) {
+                      row.style.display = '';
+                      visibleCount++;
+                  } else {
+                      row.style.display = 'none';
+                  }
+              });
 
-                updateProductCounts(visibleCount, lowStockCount);
-            }
+              updateProductCounts(visibleCount, lowStockCount);
+          }
 
-            function updateProductCounts(visibleCount = productRows.length, lowStockCount = 0) {
-                document.getElementById('totalProducts').textContent = visibleCount;
-                document.getElementById('lowStockCount').textContent = lowStockCount;
-            }
+          function updateProductCounts(visibleCount = productRows.length, lowStockCount = 0) {
+              document.getElementById('totalProducts').textContent = visibleCount;
+              document.getElementById('lowStockCount').textContent = lowStockCount;
+          }
 
-            // Initial filter
-            filterProducts();
-        });
+          filterProducts();
+      });
 
-         function previewImage(event, productId) {
-            const file = event.target.files[0];
-            const reader = new FileReader();
-
-            reader.onload = function() {
-               const preview = document.getElementById('currentImage' + productId);
-               const existingImage = document.getElementById('existingImage' + productId);
-
-               const previewImg = document.createElement('img');
-               previewImg.src = reader.result;
-               previewImg.alt = 'Image Preview';
-               previewImg.id = 'existingImage' + productId;
-               previewImg.className = 'img-thumbnail';
-               previewImg.style.maxWidth = '150px';
-
-               if (existingImage) {
-                  existingImage.remove();
-               }
-
-               preview.innerHTML = '';
-               preview.appendChild(previewImg);
-            };
-
-            if (file) {
-               reader.readAsDataURL(file);
-            }
-         }
+      // Image preview using AdminTable utility
+      function previewImage(event, productId) {
+          AdminTable.previewImage(event, 'currentImage' + productId);
+      }
       </script>
       <script src="js/admin_script.js"></script>
    </main>

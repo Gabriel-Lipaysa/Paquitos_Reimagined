@@ -559,78 +559,39 @@ $errorMsg = '';
                 </div>
             </div>
 
+            <script src="js/admin_table.js"></script>
             <script>
+                // Wire up shared utilities
                 function deleteCustomization(id) {
-                    if (confirm('Are you sure you want to delete this customization?')) {
-                        window.location.href = `?delete=${id}`;
-                    }
-                }
-
-                document.querySelectorAll('th').forEach(headerCell => {
-                    headerCell.addEventListener('click', () => {
-                        const tableElement = headerCell.closest('table');
-                        const headerIndex = Array.prototype.indexOf.call(headerCell.parentElement.children, headerCell);
-                        const currentIsAscending = headerCell.classList.contains('th-sort-asc');
-
-                        sortTableByColumn(tableElement, headerIndex, !currentIsAscending);
-                    });
-                });
-
-                function sortTableByColumn(table, column, asc = true) {
-                    const dirModifier = asc ? 1 : -1;
-                    const tBody = table.tBodies[0];
-                    const rows = Array.from(tBody.querySelectorAll('tr'));
-
-                    const sortedRows = rows.sort((a, b) => {
-                        const aColText = a.querySelector(`td:nth-child(${column + 1})`).textContent.trim();
-                        const bColText = b.querySelector(`td:nth-child(${column + 1})`).textContent.trim();
-
-                        return aColText > bColText ? (1 * dirModifier) : (-1 * dirModifier);
-                    });
-
-                    while (tBody.firstChild) {
-                        tBody.removeChild(tBody.firstChild);
-                    }
-
-                    tBody.append(...sortedRows);
-
-                    table.querySelectorAll('th').forEach(th => th.classList.remove('th-sort-asc', 'th-sort-desc'));
-                    table.querySelector(`th:nth-child(${column + 1})`).classList.toggle('th-sort-asc', asc);
-                    table.querySelector(`th:nth-child(${column + 1})`).classList.toggle('th-sort-desc', !asc);
+                    AdminTable.confirmDelete('customization', id);
                 }
 
                 function editSize(cusID, cusName, cusPrice, cusImage) {
-                    document.getElementById('modal_sizeID').value = cusID;
-                    document.getElementById('modal_sizename').value = cusName;
-                    document.getElementById('modal_sizeprice').value = cusPrice;
-                    document.getElementById('currentImage').innerHTML = cusImage ?
-                        `<img src="${cusImage}" alt="Current Image">` :
-                        '<span>No image currently set</span>';
+                    AdminTable.populateModal({
+                        'modal_sizeID': cusID,
+                        'modal_sizename': cusName,
+                        'modal_sizeprice': cusPrice
+                    });
+                    var currentImage = document.getElementById('currentImage');
+                    if (currentImage) {
+                        currentImage.innerHTML = cusImage ?
+                            '<img src="' + cusImage + '" alt="Current Image">' :
+                            '<span>No image currently set</span>';
+                    }
                 }
 
+                // Image preview for create form
                 document.querySelector('input[name="cusImage"]').addEventListener('change', function(e) {
-                    const preview = document.getElementById('imagePreview');
-                    const file = e.target.files[0];
-                    if (file) {
-                        const reader = new FileReader();
-                        reader.onload = function(e) {
-                            preview.innerHTML = `<img src="${e.target.result}" alt="Preview">`;
-                        }
-                        reader.readAsDataURL(file);
-                    }
+                    AdminTable.previewImage(e, 'imagePreview');
                 });
 
+                // Image preview for edit modal
                 document.getElementById('modal_cusImage').addEventListener('change', function(e) {
-                    const preview = document.getElementById('currentImage');
-                    const file = e.target.files[0];
-                    if (file) {
-                        const reader = new FileReader();
-                        reader.onload = function(e) {
-                            preview.innerHTML = `<img src="${e.target.result}" alt="Preview">`;
-                        }
-                        reader.readAsDataURL(file);
-                    }
+                    AdminTable.previewImage(e, 'currentImage');
                 });
+
+                // Enable table sorting
+                AdminTable.initSorting();
             </script>
     </main>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>

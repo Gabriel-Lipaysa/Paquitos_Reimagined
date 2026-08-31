@@ -1,14 +1,16 @@
 <?php
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);
 
 include 'config.php';
-
+include 'db_helper.php';
+include 'security_helper.php';
+include 'ui_helper.php';
 
 session_start();
 
-if (isset($_SESSION['message'])) {
-    echo "<script>alert('" . $_SESSION['message'] . "');</script>";
-    unset($_SESSION['message']);
-}
+
 include 'customer_header.php';
 if (isset($_SESSION['user_id'])) {
    $user_id = $_SESSION['user_id'];
@@ -190,12 +192,12 @@ function isProductInFavorites($conn, $user_id, $product_id) {
    <link rel="icon" type="image/png" href="images/pizzalogo32x32.png">
    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.1/css/all.min.css">
    <link rel="stylesheet" href="css/style.css">
+   <link rel="stylesheet" href="css/toast.css">
 </head>
 
 <body>
 
-
-
+<?php echo displayToastMessages(); ?>
 
    <div class="home-bg">
       <section class="home" id="home">
@@ -233,6 +235,7 @@ function isProductInFavorites($conn, $user_id, $product_id) {
    </div>
 
    <script src="js/script.js"></script>
+   <script src="js/toast.js"></script>
 
 
 </body>
