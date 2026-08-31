@@ -1,12 +1,9 @@
 <?php
 include 'config.php';
-session_start();
+include 'auth_helper.php';
 
-$admin_id = $_SESSION['admin_id'];
-
-if (!isset($admin_id)) {
-    header('location:admin_login.php');
-}
+requireAdminLogin();
+$admin_id = getCurrentAdminId();
 
 
 $product_name = isset($_POST['product_name']) ? $_POST['product_name'] : '';
@@ -361,15 +358,15 @@ $topProductsResult = mysqli_query($conn, $topProductsQuery);
             </div>
             <div class="summary-card">
                 <h3><i class="fas fa-box"></i> Total Items Sold</h3>
-                <div class="value"><?php echo number_format($summary['total_quantity']); ?></div>
+                <div class="value"><?php echo number_format($summary['total_quantity'] ?? 0); ?></div>
             </div>
             <div class="summary-card">
                 <h3><i class="fas fa-peso-sign"></i> Total Revenue</h3>
-                <div class="value">₱<?php echo number_format($summary['total_revenue'], 2); ?></div>
+                <div class="value">₱<?php echo number_format($summary['total_revenue'] ?? 0, 2); ?></div>
             </div>
             <div class="summary-card">
                 <h3><i class="fas fa-chart-line"></i> Average Order Value</h3>
-                <div class="value">₱<?php echo number_format($summary['average_order_value'], 2); ?></div>
+                <div class="value">₱<?php echo number_format($summary['average_order_value'] ?? 0, 2); ?></div>
             </div>
         </div>
 

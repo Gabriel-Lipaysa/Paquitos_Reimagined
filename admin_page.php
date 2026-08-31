@@ -1,13 +1,9 @@
 <?php
 include 'config.php';
-session_start();
+include 'auth_helper.php';
 
-$admin_id = $_SESSION['admin_id'];
-
-if (!isset($admin_id)) {
-   header('location:admin_login.php');
-   exit(); 
-}
+requireAdminLogin();
+$admin_id = getCurrentAdminId();
 ?>
 
 <!DOCTYPE html>
