@@ -182,7 +182,6 @@ function MenuContent() {
               </div>
 
               {loading ? (
-                <p style={{ textAlign: 'center', color: '#888', padding: '3rem 0' }}>Searching catalog...</p>
                 <ProductGridSkeleton count={4} />
               ) : products.length === 0 ? (
                 <div style={{ textAlign: 'center', padding: '3rem 1rem', background: '#fff', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
@@ -190,22 +189,12 @@ function MenuContent() {
                   <p style={{ color: '#64748b', marginTop: '0.5rem' }}>Try searching with different keywords or pick a category below.</p>
                 </div>
               ) : (
-                <div
-                  className="four-col-grid"
-                  style={{
-                    display: 'grid',
-                    gridTemplateColumns: 'repeat(4, minmax(0, 1fr))',
-                    gap: '1.5rem',
-                    width: '100%',
-                  }}
-                >
                 <div className="four-col-grid">
                   {products.map((product) => (
                     <div
                       key={product.id}
                       className="card-box"
                       onClick={() => router.push(`/product/${product.id}`)}
-                      style={{ position: 'relative', display: 'flex', flexDirection: 'column', textAlign: 'left', cursor: 'pointer' }}
                       style={{
                         position: 'relative',
                         display: 'flex',
@@ -238,12 +227,10 @@ function MenuContent() {
                               display: 'flex',
                               alignItems: 'center',
                               justifyContent: 'center',
-                              boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
                               boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
                               cursor: 'pointer',
                               color: isFav ? '#dc2626' : '#64748b',
                               transition: 'all 0.2s ease',
-                              zIndex: 2,
                               zIndex: 10,
                             }}
                           >
@@ -253,10 +240,8 @@ function MenuContent() {
                       })()}
 
                       <img
-                        src={`/uploaded_img/${product.image}`}
                         src={getImageUrl(product.image)}
                         alt={product.name}
-                        style={{ width: '100%', height: '170px', objectFit: 'contain', marginBottom: '0.75rem' }}
                         loading="lazy"
                         decoding="async"
                         style={{

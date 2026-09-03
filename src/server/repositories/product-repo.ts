@@ -21,8 +21,6 @@ export class ProductRepository {
       }
 
       if (category && category.toLowerCase() !== 'all') {
-        sql += ' AND LOWER(category) = LOWER(?)';
-        params.push(category);
         if (category.toLowerCase() === 'pizza') {
           sql += " AND (LOWER(category) = 'pizza' OR category IS NULL OR category = '')";
         } else {
@@ -87,7 +85,6 @@ export class ProductRepository {
         ...p,
         category: p.category || 'Pizza',
         status: p.status || 'available',
-        has_customizations: Boolean(p.has_customizations ?? 1),
         has_customizations: Boolean(p.has_customizations ?? (p.category?.toLowerCase() === 'pizza')),
         customization_options: p.customization_options || null,
       }));
