@@ -276,11 +276,29 @@ main {
   box-shadow: var(--box-shadow);
   text-align: center;
   transition: transform 0.2s ease, box-shadow 0.2s ease;
+  position: relative;
 }
 
 .card-box:hover {
   transform: translateY(-5px);
   box-shadow: var(--box-shadow-hover);
+}
+
+.card-fav-btn {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  z-index: 10 !important;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.card-fav-btn:hover {
+  transform: scale(1.1);
 }
 
 /* Strict 4-Column Grid */

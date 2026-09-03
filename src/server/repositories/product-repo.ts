@@ -23,6 +23,12 @@ export class ProductRepository {
       if (category && category.toLowerCase() !== 'all') {
         sql += ' AND LOWER(category) = LOWER(?)';
         params.push(category);
+        if (category.toLowerCase() === 'pizza') {
+          sql += " AND (LOWER(category) = 'pizza' OR category IS NULL OR category = '')";
+        } else {
+          sql += ' AND LOWER(category) = LOWER(?)';
+          params.push(category);
+        }
       }
 
       if (search) {
@@ -56,6 +62,11 @@ export class ProductRepository {
       if (!includeInactive) {
         filtered = filtered.filter((p) => p.status !== 'inactive');
       }
+      if (category && category.toLowerCase() !== 'all') {
+        filtered = filtered.filter(
+          (p) => (p.category || 'Pizza').toLowerCase() === category.toLowerCase()
+        );
+      }
       if (search) {
         filtered = filtered.filter(
           (p) =>
@@ -63,11 +74,21 @@ export class ProductRepository {
             p.description?.toLowerCase().includes(search.toLowerCase())
         );
       }
+      if (priceTier === '200') {
+        filtered = filtered.filter((p) => Number(p.price) < 200);
+      } else if (priceTier === '400') {
+        filtered = filtered.filter((p) => Number(p.price) >= 200 && Number(p.price) <= 400);
+      } else if (priceTier === '600') {
+        filtered = filtered.filter((p) => Number(p.price) >= 400 && Number(p.price) <= 600);
+      } else if (priceTier === '601') {
+        filtered = filtered.filter((p) => Number(p.price) > 600);
+      }
       return filtered.map((p) => ({
         ...p,
         category: p.category || 'Pizza',
         status: p.status || 'available',
         has_customizations: Boolean(p.has_customizations ?? 1),
+        has_customizations: Boolean(p.has_customizations ?? (p.category?.toLowerCase() === 'pizza')),
         customization_options: p.customization_options || null,
       }));
     }
