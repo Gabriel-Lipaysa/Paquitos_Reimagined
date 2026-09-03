@@ -8,7 +8,6 @@ import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/context/ToastContext';
 import { HeartIcon, SearchIcon, ArrowLeftIcon } from '@/components/Icons';
 import { getImageUrl } from '@/lib/image-helper';
-import { LazyImage } from '@/components/LazyImage';
 import { ProductGridSkeleton } from '@/components/Skeletons';
 
 function MenuContent() {
@@ -66,6 +65,7 @@ function MenuContent() {
 
   const handleSelectCategory = (cat: string) => {
     setSelectedCategory(cat);
+    setProducts([]);
     setSearchTerm('');
     setSelectedPriceTier('all');
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -73,6 +73,7 @@ function MenuContent() {
 
   const handleBackToCategories = () => {
     setSelectedCategory(null);
+    setProducts([]);
     setSearchTerm('');
     setSelectedPriceTier('all');
   };
@@ -181,28 +182,27 @@ function MenuContent() {
               </div>
 
               {loading ? (
-                <p style={{ textAlign: 'center', color: '#888', padding: '3rem 0' }}>Searching catalog...</p>
+                <ProductGridSkeleton count={4} />
               ) : products.length === 0 ? (
                 <div style={{ textAlign: 'center', padding: '3rem 1rem', background: '#fff', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
                   <h3 style={{ color: '#334155' }}>No items found matching "{searchTerm}"</h3>
                   <p style={{ color: '#64748b', marginTop: '0.5rem' }}>Try searching with different keywords or pick a category below.</p>
                 </div>
               ) : (
-                <div
-                  className="four-col-grid"
-                  style={{
-                    display: 'grid',
-                    gridTemplateColumns: 'repeat(4, minmax(0, 1fr))',
-                    gap: '1.5rem',
-                    width: '100%',
-                  }}
-                >
+                <div className="four-col-grid">
                   {products.map((product) => (
                     <div
                       key={product.id}
                       className="card-box"
                       onClick={() => router.push(`/product/${product.id}`)}
-                      style={{ position: 'relative', display: 'flex', flexDirection: 'column', textAlign: 'left', cursor: 'pointer' }}
+                      style={{
+                        position: 'relative',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        textAlign: 'left',
+                        cursor: 'pointer',
+                        backgroundColor: '#fff',
+                      }}
                     >
                       {(() => {
                         const isFav = favoriteIds.includes(product.id);
@@ -227,11 +227,11 @@ function MenuContent() {
                               display: 'flex',
                               alignItems: 'center',
                               justifyContent: 'center',
-                              boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+                              boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
                               cursor: 'pointer',
                               color: isFav ? '#dc2626' : '#64748b',
                               transition: 'all 0.2s ease',
-                              zIndex: 2,
+                              zIndex: 10,
                             }}
                           >
                             <HeartIcon size={18} fill={isFav ? '#dc2626' : 'none'} />
@@ -240,9 +240,17 @@ function MenuContent() {
                       })()}
 
                       <img
-                        src={`/uploaded_img/${product.image}`}
+                        src={getImageUrl(product.image)}
                         alt={product.name}
-                        style={{ width: '100%', height: '170px', objectFit: 'contain', marginBottom: '0.75rem' }}
+                        loading="lazy"
+                        decoding="async"
+                        style={{
+                          width: '100%',
+                          height: '170px',
+                          objectFit: 'contain',
+                          marginBottom: '0.75rem',
+                          backgroundColor: 'transparent',
+                        }}
                       />
 
                       <span style={{ fontSize: '0.72rem', fontWeight: 700, color: '#008C3B', backgroundColor: '#f0fdf4', padding: '2px 8px', borderRadius: '4px', alignSelf: 'flex-start', marginBottom: '0.35rem' }}>
@@ -511,6 +519,7 @@ function MenuContent() {
                     textAlign: 'left',
                     cursor: 'pointer',
                     transition: 'transform 0.2s ease, box-shadow 0.2s ease',
+                    backgroundColor: '#fff',
                   }}
                 >
                   {(() => {
@@ -536,11 +545,11 @@ function MenuContent() {
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'center',
-                          boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+                          boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
                           cursor: 'pointer',
                           color: isFav ? '#dc2626' : '#64748b',
                           transition: 'all 0.2s ease',
-                          zIndex: 2,
+                          zIndex: 10,
                         }}
                       >
                         <HeartIcon size={18} fill={isFav ? '#dc2626' : 'none'} />
@@ -564,24 +573,27 @@ function MenuContent() {
                         letterSpacing: '0.5px',
                         textTransform: 'uppercase',
                         boxShadow: '0 2px 6px rgba(0,0,0,0.2)',
-                        zIndex: 2,
+                        zIndex: 10,
                       }}
                     >
                       {product.status === 'sold_out' ? 'Sold Out' : 'Unavailable'}
                     </span>
                   )}
 
-                  <div style={{ marginBottom: '0.75rem', width: '100%' }}>
-                    <LazyImage
-                      src={product.image}
-                      alt={product.name}
-                      aspectRatio="1/1"
-                      style={{
-                        maxHeight: '180px',
-                        opacity: product.status && product.status !== 'available' ? 0.65 : 1,
-                      }}
-                    />
-                  </div>
+                  <img
+                    src={getImageUrl(product.image)}
+                    alt={product.name}
+                    loading="lazy"
+                    decoding="async"
+                    style={{
+                      width: '100%',
+                      height: '180px',
+                      objectFit: 'contain',
+                      marginBottom: '0.75rem',
+                      backgroundColor: 'transparent',
+                      opacity: product.status && product.status !== 'available' ? 0.65 : 1,
+                    }}
+                  />
 
                   <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '0.35rem' }}>
                     <span style={{ fontSize: '0.72rem', fontWeight: 700, color: '#008C3B', backgroundColor: '#f0fdf4', padding: '2px 8px', borderRadius: '4px' }}>
