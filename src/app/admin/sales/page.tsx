@@ -273,7 +273,7 @@ export default function AdminSalesPage() {
         </div>
       </div>
 
-      {/* 🏆 Top Performing Products Section */}
+      {/* Top Performing Products Section */}
       <div className="print-card" style={{
         background: '#fff',
         padding: '1.5rem',
@@ -285,7 +285,12 @@ export default function AdminSalesPage() {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem', flexWrap: 'wrap', gap: '0.75rem' }}>
           <div>
             <h2 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#1e293b', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <span>🏆 Top Performing Products</span>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#008C3B" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="18" y1="20" x2="18" y2="10"></line>
+                <line x1="12" y1="20" x2="12" y2="4"></line>
+                <line x1="6" y1="20" x2="6" y2="14"></line>
+              </svg>
+              Top Performing Products
             </h2>
             <p style={{ color: '#64748b', fontSize: '0.85rem', marginTop: '2px' }}>
               Ranked by total gross revenue generated
@@ -338,57 +343,96 @@ export default function AdminSalesPage() {
         ) : (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '1rem' }}>
             {topProductsToDisplay.map((item, idx) => {
-              const rankMedals = ['🥇', '🥈', '🥉'];
-              const medal = rankMedals[idx] || `#${idx + 1}`;
+              const rankColor = idx === 0 ? '#008C3B' : idx === 1 ? '#0284c7' : idx === 2 ? '#d97706' : '#64748b';
+              const rankBg = idx === 0 ? '#f0fdf4' : idx === 1 ? '#f0f9ff' : idx === 2 ? '#fffbeb' : '#f8fafc';
               return (
                 <div
                   key={item.name}
                   style={{
-                    padding: '1rem',
+                    padding: '1.1rem',
                     borderRadius: '10px',
                     border: '1px solid #e2e8f0',
-                    backgroundColor: idx === 0 ? '#f0fdf4' : idx === 1 ? '#f8fafc' : '#fff',
+                    backgroundColor: idx === 0 ? '#fcfdfd' : '#fff',
                     display: 'flex',
                     flexDirection: 'column',
                     gap: '8px',
+                    transition: 'border-color 0.15s ease, box-shadow 0.15s ease',
                   }}
                 >
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <span style={{ fontSize: idx < 3 ? '1.25rem' : '0.9rem', fontWeight: 800, color: '#475569' }}>
-                        {medal}
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
+                      <span
+                        style={{
+                          width: '26px',
+                          height: '26px',
+                          borderRadius: '6px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          fontSize: '0.78rem',
+                          fontWeight: 800,
+                          backgroundColor: rankBg,
+                          color: rankColor,
+                          border: `1px solid ${idx < 3 ? rankColor + '40' : '#e2e8f0'}`,
+                          flexShrink: 0,
+                        }}
+                      >
+                        {idx + 1}
                       </span>
-                      <span style={{ fontWeight: 800, color: '#1e293b', fontSize: '0.95rem' }}>
+                      <span
+                        style={{
+                          fontWeight: 700,
+                          color: '#1e293b',
+                          fontSize: '0.95rem',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          whiteSpace: 'nowrap',
+                        }}
+                      >
                         {item.name}
                       </span>
                     </div>
-                    <span style={{ fontSize: '0.72rem', fontWeight: 700, color: '#008C3B', backgroundColor: '#e2fbe8', padding: '2px 8px', borderRadius: '12px' }}>
+                    <span
+                      style={{
+                        fontSize: '0.7rem',
+                        fontWeight: 700,
+                        letterSpacing: '0.3px',
+                        textTransform: 'uppercase',
+                        color: '#0f766e',
+                        backgroundColor: '#f0fdfa',
+                        border: '1px solid #ccfbf1',
+                        padding: '2px 8px',
+                        borderRadius: '4px',
+                        flexShrink: 0,
+                      }}
+                    >
                       {item.category}
                     </span>
                   </div>
 
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginTop: '4px' }}>
                     <span style={{ fontSize: '0.85rem', color: '#64748b' }}>
-                      <strong>{item.qty}</strong> units sold
+                      <strong style={{ color: '#334155' }}>{item.qty}</strong> units sold
                     </span>
-                    <span style={{ fontSize: '1.1rem', fontWeight: 900, color: '#008C3B' }}>
+                    <span style={{ fontSize: '1.15rem', fontWeight: 900, color: '#008C3B' }}>
                       ₱{Number(item.revenue).toFixed(2)}
                     </span>
                   </div>
 
                   {/* Share Progress Bar */}
-                  <div style={{ width: '100%', backgroundColor: '#e2e8f0', height: '6px', borderRadius: '3px', overflow: 'hidden', marginTop: '2px' }}>
+                  <div style={{ width: '100%', backgroundColor: '#f1f5f9', height: '5px', borderRadius: '4px', overflow: 'hidden', marginTop: '4px' }}>
                     <div
                       style={{
-                        width: `${Math.min(100, Math.max(5, item.percentage))}%`,
-                        backgroundColor: idx === 0 ? '#008C3B' : idx === 1 ? '#3b82f6' : '#10b981',
+                        width: `${Math.min(100, Math.max(4, item.percentage))}%`,
+                        backgroundColor: idx === 0 ? '#008C3B' : idx === 1 ? '#0284c7' : idx === 2 ? '#d97706' : '#94a3b8',
                         height: '100%',
-                        borderRadius: '3px',
+                        borderRadius: '4px',
                       }}
                     />
                   </div>
-                  <div style={{ fontSize: '0.72rem', color: '#94a3b8', textAlign: 'right' }}>
-                    {item.percentage.toFixed(1)}% of total revenue
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: '#94a3b8', marginTop: '2px' }}>
+                    <span>Revenue Share</span>
+                    <span style={{ fontWeight: 700, color: '#64748b' }}>{item.percentage.toFixed(1)}%</span>
                   </div>
                 </div>
               );
