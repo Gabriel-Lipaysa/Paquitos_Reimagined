@@ -62,17 +62,29 @@ export default function ProfilePage() {
     fetchProfile();
   }, []);
 
+  const hasNewPassLength = newPassword.length >= 8;
+  const hasNewPassSpecial = /[!@#$%^&*(),.?":{}|<>_~`\-+=;'/\\\[\]]/.test(newPassword);
+
   const handleProfileSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (newPassword && newPassword !== confirmPassword) {
-      showToast('New passwords do not match!', 'warning');
-      return;
-    }
-
-    if (newPassword && !oldPassword) {
-      showToast('Please enter your current password to set a new password', 'warning');
-      return;
+    if (newPassword) {
+      if (!hasNewPassLength) {
+        showToast('New password must be at least 8 characters long.', 'warning');
+        return;
+      }
+      if (!hasNewPassSpecial) {
+        showToast('New password must contain at least one special character (!@#$%^&*...).', 'warning');
+        return;
+      }
+      if (newPassword !== confirmPassword) {
+        showToast('New passwords do not match!', 'warning');
+        return;
+      }
+      if (!oldPassword) {
+        showToast('Please enter your current password to set a new password', 'warning');
+        return;
+      }
     }
 
     setSaving(true);
@@ -292,10 +304,30 @@ export default function ProfilePage() {
                     <input
                       type="password"
                       className="form-control"
-                      placeholder="Enter new secure password"
+                      placeholder="Enter new secure password (8+ chars with special char)"
                       value={newPassword}
                       onChange={(e) => setNewPassword(e.target.value)}
                     />
+                    {newPassword.length > 0 && (
+                      <div style={{
+                        marginTop: '6px',
+                        padding: '8px 10px',
+                        backgroundColor: '#f1f5f9',
+                        border: '1px solid #e2e8f0',
+                        borderRadius: '6px',
+                        fontSize: '0.78rem',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '4px',
+                      }}>
+                        <div style={{ color: hasNewPassLength ? '#16a34a' : '#dc2626', display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 600 }}>
+                          <span>{hasNewPassLength ? '✓' : '✗'}</span> At least 8 characters
+                        </div>
+                        <div style={{ color: hasNewPassSpecial ? '#16a34a' : '#dc2626', display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 600 }}>
+                          <span>{hasNewPassSpecial ? '✓' : '✗'}</span> Contains special character (!@#$%^&*...)
+                        </div>
+                      </div>
+                    )}
                   </div>
                   <div>
                     <label style={{ fontSize: '0.85rem', fontWeight: 600, color: '#334155', display: 'block', marginBottom: '4px' }}>

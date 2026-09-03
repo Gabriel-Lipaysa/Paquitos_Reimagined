@@ -43,8 +43,20 @@ export default function AdminUsersPage() {
     fetchUsers();
   }, []);
 
+  const hasPassLength = pass.length >= 8;
+  const hasPassSpecial = /[!@#$%^&*(),.?":{}|<>_~`\-+=;'/\\\[\]]/.test(pass);
+
   const handleAddCustomer = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (!hasPassLength) {
+      showToast('Password must be at least 8 characters long.', 'warning');
+      return;
+    }
+    if (!hasPassSpecial) {
+      showToast('Password must contain at least one special character (!@#$%^&*...).', 'warning');
+      return;
+    }
     if (pass !== cpass) {
       showToast('Confirm password does not match!', 'warning');
       return;
@@ -242,15 +254,35 @@ export default function AdminUsersPage() {
               </div>
 
               <div className="form-group">
-                <label>Password</label>
+                <label>Account Password</label>
                 <input
                   type="password"
                   required
                   className="form-control"
-                  placeholder="Enter account password"
+                  placeholder="Enter password (8+ chars with special char)"
                   value={pass}
                   onChange={(e) => setPass(e.target.value)}
                 />
+                {pass.length > 0 && (
+                  <div style={{
+                    marginTop: '6px',
+                    padding: '8px 10px',
+                    backgroundColor: '#f8fafc',
+                    border: '1px solid #e2e8f0',
+                    borderRadius: '6px',
+                    fontSize: '0.78rem',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '4px',
+                  }}>
+                    <div style={{ color: hasPassLength ? '#16a34a' : '#dc2626', display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 600 }}>
+                      <span>{hasPassLength ? '✓' : '✗'}</span> At least 8 characters
+                    </div>
+                    <div style={{ color: hasPassSpecial ? '#16a34a' : '#dc2626', display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 600 }}>
+                      <span>{hasPassSpecial ? '✓' : '✗'}</span> Contains special character (!@#$%^&*...)
+                    </div>
+                  </div>
+                )}
               </div>
 
               <div className="form-group">

@@ -2,12 +2,18 @@ import { UserRepository } from '../repositories/user-repo';
 import { AdminRepository } from '../repositories/admin-repo';
 import { hashPassword, setUserCookie, setAdminCookie, clearUserCookie, clearAdminCookie } from '@/lib/jwt';
 import { AuthSession } from '../db/schema';
+import { validatePasswordStrength } from '@/validation/auth-schema';
 
 export class AuthService {
   static async registerUser(name: string, email: string, pass: string): Promise<{ success: boolean; message: string; userId?: number; session?: AuthSession }> {
     const existing = await UserRepository.findByEmail(email);
     if (existing) {
       return { success: false, message: 'This email is already registered! Please sign in.' };
+    }
+
+    const passCheck = validatePasswordStrength(pass);
+    if (!passCheck.valid) {
+      return { success: false, message: passCheck.error || 'Password does not meet complexity requirements' };
     }
 
     const passwordHash = hashPassword(pass);
@@ -70,8 +76,9 @@ export class AuthService {
         return { success: false, message: 'Current password does not match' };
       }
 
-      if (data.newPassword.length < 3) {
-        return { success: false, message: 'New password must be at least 3 characters' };
+      const passCheck = validatePasswordStrength(data.newPassword);
+      if (!passCheck.valid) {
+        return { success: false, message: passCheck.error || 'Password does not meet complexity requirements' };
       }
 
       passwordHash = hashPassword(data.newPassword);

@@ -18,10 +18,13 @@ CREATE TABLE IF NOT EXISTS `admin` (
   UNIQUE KEY `uniq_admin_name` (`name`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Default Admin Account: Username: admin, Password: 111 (SHA-1 hash: 6216f8a75fd5bb3d5f22b6f9958cdede3fc086c2)
+-- Default Admin Accounts:
+-- Root Super-Admin: Username: root, Password: root (SHA-1: dc76e9f0c0006e8f919e0c515c66dbba3982f785)
+-- Store Administrator: Username: admin, Password: admin123 (SHA-1: f865b53623b121fd34ee5426c792e5c33af8c227)
 INSERT INTO `admin` (`id`, `name`, `password`) VALUES
-(1, 'admin', '6216f8a75fd5bb3d5f22b6f9958cdede3fc086c2')
-ON DUPLICATE KEY UPDATE `id`=`id`;
+(1, 'root', 'dc76e9f0c0006e8f919e0c515c66dbba3982f785'),
+(2, 'admin', 'f865b53623b121fd34ee5426c792e5c33af8c227')
+ON DUPLICATE KEY UPDATE `password`=VALUES(`password`);
 
 -- --------------------------------------------------------
 -- Table: user

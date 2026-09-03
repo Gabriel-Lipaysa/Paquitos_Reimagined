@@ -62,6 +62,43 @@ A high-performance, full-stack online ordering and restaurant management platfor
 
 ---
 
+### 🔑 How to Access & Use the Admin Panel
+
+#### Default Seed Credentials
+For testing and local development, the following accounts are pre-seeded in the database:
+
+| Account Role | Portal URL | Username / Email | Default Password | Authority & Scope |
+| :--- | :--- | :--- | :--- | :--- |
+| **Root Super-User** | `/admin/login` | `root` | `root` | **Exclusive Account Authority**: The ONLY user capable of managing (creating, editing, deleting) administrator accounts and customer accounts. |
+| **Store Administrator** | `/admin/login` | `admin` | `admin123` | **Store Operations Authority**: Dedicated exclusively to store management (Dashboard, Orders, Products, Categories, Sales Reports). Restricted from modifying other admin/customer accounts. |
+| **Demo Customer** | `/` (Login modal) | `user@gmail.com` | `111` | Standard customer ordering, cart checkout, and profile settings. |
+
+> [!NOTE]
+> **Password Complexity Policy**: While the seed passwords above are provided for initial quick-login convenience, all newly registered accounts or modified passwords (Customer, Admin, and Root) **must be at least 8 characters long and contain at least one special character** (`!@#$%^&*...`). Missing requirements are highlighted in real-time.
+
+---
+
+#### Step 1: Log In to the Admin Portal
+1. Navigate to `/admin/login` (or `/admin`).
+2. Log in with either:
+   - **`root` / `root`** &rarr; For managing administrator accounts (`/admin/accounts`) and customer user accounts (`/admin/users`).
+   - **`admin` / `admin123`** &rarr; For daily restaurant operations (`/admin/orders`, `/admin/products`, `/admin/sales`, `/admin/categories`).
+3. The interface automatically routes and configures sidebar modules based on your role authority.
+
+#### Step 2: Role Separation & Capabilities by Module
+| Module | URL Route | Root Super-User (`root`) | Store Admin (`admin` / Staff) |
+| :--- | :--- | :--- | :--- |
+| **Admin Accounts** | `/admin/accounts` | **Full Control**: Create new admins, edit credentials, delete accounts | ⛔ *Access Denied (403)* |
+| **Customer Users** | `/admin/users` | **Full Control**: Create, view profiles, delete customer accounts | ⛔ *Access Denied (403)* |
+| **Root Profile** | `/admin/profile` | **Full Control**: Update root credentials with password validation | ⛔ *Access Denied (403)* |
+| **Dashboard** | `/admin` | View-only overview | **Full Control**: Live store metrics & revenue |
+| **Orders Pipeline** | `/admin/orders` | View-only | **Full Control**: Update kitchen statuses & payment proofs |
+| **Products & Menu** | `/admin/products` | View-only | **Full Control**: Add items, pricing, inventory availability |
+| **Categories** | `/admin/categories` | View-only | **Full Control**: Create and organize menu categories |
+| **Sales & Reports** | `/admin/sales` | View-only | **Full Control**: Top products leaderboard, Excel & PDF exports |
+
+---
+
 ### 3. Business Value & Analytics
 
 | Advantage | Benefit |
