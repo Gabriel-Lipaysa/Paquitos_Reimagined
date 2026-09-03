@@ -73,6 +73,61 @@ export const CategoryPillsSkeleton: React.FC = () => {
 };
 
 /**
+ * Skeleton for a single Category Card
+ */
+export const CategoryCardSkeleton: React.FC = () => {
+  return (
+    <div
+      style={{
+        backgroundColor: '#fff',
+        borderRadius: '16px',
+        overflow: 'hidden',
+        border: '2px solid #e2e8f0',
+        display: 'flex',
+        flexDirection: 'column',
+      }}
+    >
+      <div
+        style={{
+          backgroundColor: '#f8fafc',
+          height: '170px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: '1.25rem',
+        }}
+      >
+        <div className="skeleton" style={{ width: '110px', height: '110px', borderRadius: '50%' }} />
+      </div>
+      <div style={{ padding: '1rem 1rem 1.25rem', display: 'flex', justifyContent: 'center' }}>
+        <div className="skeleton" style={{ width: '65%', height: '24px', borderRadius: '6px' }} />
+      </div>
+    </div>
+  );
+};
+
+/**
+ * Skeleton for Category Cards Grid (4-column layout)
+ */
+export const CategoryGridSkeleton: React.FC<{ count?: number }> = ({ count = 4 }) => {
+  return (
+    <div
+      className="four-col-grid"
+      style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(4, minmax(0, 1fr))',
+        gap: '1.5rem',
+        width: '100%',
+      }}
+    >
+      {Array.from({ length: count }).map((_, i) => (
+        <CategoryCardSkeleton key={i} />
+      ))}
+    </div>
+  );
+};
+
+/**
  * Skeleton for Product Detail Page
  */
 export const ProductDetailSkeleton: React.FC = () => {

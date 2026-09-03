@@ -9,12 +9,15 @@ import { useToast } from '@/context/ToastContext';
 import { HeartIcon } from '@/components/Icons';
 import { AddToCartModal, AddedCartItem } from '@/components/AddToCartModal';
 import { getImageUrl } from '@/lib/image-helper';
-import { ProductGridSkeleton } from '@/components/Skeletons';
+import { ProductGridSkeleton, CategoryGridSkeleton } from '@/components/Skeletons';
 
 export default function HomePage() {
   const [currentSlide, setCurrentSlide] = useState(0);
   const [featuredProducts, setFeaturedProducts] = useState<Product[]>([]);
   const [loadingProducts, setLoadingProducts] = useState(true);
+  const [categories, setCategories] = useState<string[]>([]);
+  const [loadingCategories, setLoadingCategories] = useState(true);
+  const [categoryHeroMap, setCategoryHeroMap] = useState<Record<string, string>>({});
   const [addedItemModal, setAddedItemModal] = useState<AddedCartItem | null>(null);
   const { user, refreshStats } = useAuth();
   const { showToast } = useToast();
@@ -83,6 +86,45 @@ export default function HomePage() {
   }, [slides.length]);
 
   const [favoriteIds, setFavoriteIds] = useState<number[]>([]);
+
+  // Async load categories and category hero images
+  useEffect(() => {
+    let isMounted = true;
+    const loadCategories = async () => {
+      setLoadingCategories(true);
+      try {
+        const [catRes, prodRes] = await Promise.all([
+          fetch('/api/categories'),
+          fetch('/api/products'),
+        ]);
+        const catData = await catRes.json();
+        const prodData = await prodRes.json();
+        if (isMounted) {
+          if (catData.status === 'success' && Array.isArray(catData.data?.categories)) {
+            setCategories(catData.data.categories);
+          }
+          if (prodData.status === 'success' && Array.isArray(prodData.data?.products)) {
+            const heroMap: Record<string, string> = {};
+            prodData.data.products.forEach((p: Product) => {
+              const catKey = (p.category || 'Pizza').toLowerCase();
+              if (!heroMap[catKey] && p.image) {
+                heroMap[catKey] = p.image;
+              }
+            });
+            setCategoryHeroMap(heroMap);
+          }
+        }
+      } catch (err) {
+        console.error('Error loading homepage categories:', err);
+      } finally {
+        if (isMounted) setLoadingCategories(false);
+      }
+    };
+    loadCategories();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   // Fetch featured products for preview
   useEffect(() => {
@@ -240,6 +282,92 @@ export default function HomePage() {
             <h3 style={{ fontSize: '1.2rem', fontWeight: 700, color: '#222' }}>3. Enjoy & Share</h3>
             <p style={{ color: '#666', marginTop: '0.5rem', fontSize: '0.95rem' }}>Gather family and friends to share the best pizza in town.</p>
           </div>
+        </div>
+      </section>
+
+      {/* Category Selection Hub */}
+      <section style={{ backgroundColor: '#f8fafc', padding: '4rem 1.5rem', borderBottom: '1px solid #e2e8f0' }}>
+        <div className="container">
+          <div style={{ textAlign: 'center', marginBottom: '2.5rem' }}>
+            <h2 className="heading" style={{ marginBottom: '0.75rem' }}>
+              Browse by <span>Category</span>
+            </h2>
+            <p style={{ color: '#64748b', fontSize: '1.05rem', maxWidth: '600px', margin: '0 auto' }}>
+              Explore our freshly baked pizzas, delicious sides, refreshing beverages, and exclusive combos.
+            </p>
+          </div>
+
+          {loadingCategories ? (
+            <CategoryGridSkeleton count={4} />
+          ) : categories.length === 0 ? null : (
+            <div
+              className="four-col-grid"
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(4, minmax(0, 1fr))',
+                gap: '1.5rem',
+                width: '100%',
+              }}
+            >
+              {categories.map((cat) => {
+                const matchedImg = categoryHeroMap[cat.toLowerCase()];
+                const heroImg = matchedImg ? getImageUrl(matchedImg) : getImageUrl('Hawaiian.png');
+
+                return (
+                  <div
+                    key={cat}
+                    onClick={() => router.push(`/menu?category=${encodeURIComponent(cat)}`)}
+                    style={{
+                      backgroundColor: '#fff',
+                      borderRadius: '16px',
+                      overflow: 'hidden',
+                      border: '2px solid #008C3B',
+                      boxShadow: '0 4px 15px rgba(0,0,0,0.03)',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      transition: 'transform 0.15s ease, box-shadow 0.15s ease',
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.transform = 'translateY(-3px)';
+                      e.currentTarget.style.boxShadow = '0 8px 25px rgba(0,140,59,0.12)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.transform = 'translateY(0)';
+                      e.currentTarget.style.boxShadow = '0 4px 15px rgba(0,0,0,0.03)';
+                    }}
+                  >
+                    <div style={{
+                      backgroundColor: '#fff',
+                      height: '170px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      padding: '1.25rem 1.25rem 0.5rem',
+                    }}>
+                      <img
+                        src={heroImg}
+                        alt={cat}
+                        loading="lazy"
+                        decoding="async"
+                        style={{
+                          maxHeight: '140px',
+                          maxWidth: '100%',
+                          objectFit: 'contain',
+                        }}
+                      />
+                    </div>
+
+                    <div style={{ padding: '1rem 1rem 1.25rem', textAlign: 'center' }}>
+                      <h3 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#1e293b', margin: 0 }}>
+                        {cat}
+                      </h3>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
       </section>
 
