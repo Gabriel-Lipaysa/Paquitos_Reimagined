@@ -9,10 +9,12 @@ import { useToast } from '@/context/ToastContext';
 import { HeartIcon } from '@/components/Icons';
 import { AddToCartModal, AddedCartItem } from '@/components/AddToCartModal';
 import { getImageUrl } from '@/lib/image-helper';
+import { ProductGridSkeleton } from '@/components/Skeletons';
 
 export default function HomePage() {
   const [currentSlide, setCurrentSlide] = useState(0);
   const [featuredProducts, setFeaturedProducts] = useState<Product[]>([]);
+  const [loadingProducts, setLoadingProducts] = useState(true);
   const [addedItemModal, setAddedItemModal] = useState<AddedCartItem | null>(null);
   const { user, refreshStats } = useAuth();
   const { showToast } = useToast();
@@ -84,6 +86,7 @@ export default function HomePage() {
 
   // Fetch featured products for preview
   useEffect(() => {
+    setLoadingProducts(true);
     fetch('/api/products')
       .then((res) => res.json())
       .then((data) => {
@@ -91,7 +94,8 @@ export default function HomePage() {
           setFeaturedProducts(data.data.products.slice(0, 6));
         }
       })
-      .catch(console.error);
+      .catch(console.error)
+      .finally(() => setLoadingProducts(false));
 
     if (user) {
       fetch('/api/favorites')
@@ -243,10 +247,12 @@ export default function HomePage() {
       <section className="container" style={{ padding: '4rem 1.5rem' }}>
         <h2 className="heading">Featured <span>Pizzas</span></h2>
 
-        {featuredProducts.length === 0 ? (
-          <p style={{ textAlign: 'center', color: '#888' }}>Loading delicious pizzas...</p>
+        {loadingProducts ? (
+          <ProductGridSkeleton count={4} />
+        ) : featuredProducts.length === 0 ? (
+          <p style={{ textAlign: 'center', color: '#888' }}>No featured pizzas available at the moment.</p>
         ) : (
-          <div className="grid-container">
+          <div className="four-col-grid">
             {featuredProducts.map((product) => (
               <div
                 key={product.id}
@@ -259,6 +265,7 @@ export default function HomePage() {
                   textAlign: 'left',
                   cursor: 'pointer',
                   transition: 'transform 0.2s ease, box-shadow 0.2s ease',
+                  backgroundColor: '#fff',
                 }}
               >
                 {(() => {
@@ -284,11 +291,11 @@ export default function HomePage() {
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+                        boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
                         cursor: 'pointer',
                         color: isFav ? '#dc2626' : '#64748b',
                         transition: 'all 0.2s ease',
-                        zIndex: 2,
+                        zIndex: 10,
                       }}
                     >
                       <HeartIcon size={19} fill={isFav ? '#dc2626' : 'none'} />
@@ -312,7 +319,7 @@ export default function HomePage() {
                       letterSpacing: '0.5px',
                       textTransform: 'uppercase',
                       boxShadow: '0 2px 6px rgba(0,0,0,0.2)',
-                      zIndex: 2,
+                      zIndex: 10,
                     }}
                   >
                     {product.status === 'sold_out' ? 'Sold Out' : 'Unavailable'}
@@ -322,11 +329,14 @@ export default function HomePage() {
                 <img
                   src={getImageUrl(product.image)}
                   alt={product.name}
+                  loading="lazy"
+                  decoding="async"
                   style={{
                     width: '100%',
                     height: '200px',
                     objectFit: 'contain',
                     marginBottom: '1rem',
+                    backgroundColor: 'transparent',
                     opacity: product.status && product.status !== 'available' ? 0.7 : 1,
                   }}
                 />

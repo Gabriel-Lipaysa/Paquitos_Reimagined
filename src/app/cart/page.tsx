@@ -8,7 +8,6 @@ import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/context/ToastContext';
 import { TrashIcon, CartIcon } from '@/components/Icons';
 import { getImageUrl } from '@/lib/image-helper';
-import { LazyImage } from '@/components/LazyImage';
 import { CartPageSkeleton } from '@/components/Skeletons';
 
 export default function CartPage() {
@@ -364,14 +363,13 @@ export default function CartPage() {
                     alignItems: 'center',
                   }}
                 >
-                  <div style={{ width: '80px', height: '80px', flexShrink: 0 }}>
-                    <LazyImage
-                      src={item.image}
-                      alt={item.name}
-                      aspectRatio="1/1"
-                      style={{ width: '80px', height: '80px', objectFit: 'contain' }}
-                    />
-                  </div>
+                  <img
+                    src={getImageUrl(item.image)}
+                    alt={item.name}
+                    loading="lazy"
+                    decoding="async"
+                    style={{ width: '80px', height: '80px', objectFit: 'contain', backgroundColor: 'transparent' }}
+                  />
 
                   <div style={{ flex: 1 }}>
                     <h3 style={{ fontSize: '1.15rem', color: '#222', fontWeight: 800 }}>{item.name}</h3>
