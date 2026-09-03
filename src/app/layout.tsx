@@ -4,6 +4,7 @@ import './globals.css';
 import { Providers } from '@/components/Providers';
 import { Navbar } from '@/components/Navbar';
 import { Footer } from '@/components/Footer';
+import { SpeedInsights } from '@vercel/speed-insights/next';
 
 export const dynamic = 'force-dynamic';
 
@@ -31,6 +32,7 @@ export default function RootLayout({
           <main>{children}</main>
           <Footer />
         </Providers>
+        <SpeedInsights />
       </body>
     </html>
   );
