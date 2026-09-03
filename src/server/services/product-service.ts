@@ -1,7 +1,5 @@
 import { ProductRepository } from '../repositories/product-repo';
-import { SizeRepository } from '../repositories/size-repo';
-import { CustomizationRepository } from '../repositories/customization-repo';
-import { Product, ProductStatus, Size, Customization } from '../db/schema';
+import { Product, ProductStatus } from '../db/schema';
 
 export class ProductService {
   static async getProducts(
@@ -21,14 +19,9 @@ export class ProductService {
     return ProductRepository.getCategories(includeInactive);
   }
 
-  static async getProductDetails(id: number, includeInactive: boolean = false): Promise<{ product: Product | null; sizes: Size[]; customizations: Customization[] }> {
-    const [product, sizes, customizations] = await Promise.all([
-      ProductRepository.findById(id, includeInactive),
-      SizeRepository.getAll(),
-      CustomizationRepository.getAll(),
-    ]);
-
-    return { product, sizes, customizations };
+  static async getProductDetails(id: number, includeInactive: boolean = false): Promise<{ product: Product | null }> {
+    const product = await ProductRepository.findById(id, includeInactive);
+    return { product };
   }
 
   static async createProduct(data: {

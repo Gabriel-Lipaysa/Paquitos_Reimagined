@@ -51,19 +51,6 @@ export interface Product {
   image: string;
 }
 
-export interface Size {
-  sizeID: number;
-  sizename: string;
-  sizeprice: number;
-}
-
-export interface Customization {
-  cusID: number;
-  cusName: string;
-  cusPrice: number;
-  cusImage?: string;
-}
-
 export interface CartItem {
   id: number;
   user_id: number;
