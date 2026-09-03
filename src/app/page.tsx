@@ -245,7 +245,7 @@ export default function HomePage() {
 
       {/* Featured Pizzas Section */}
       <section className="container" style={{ padding: '4rem 1.5rem' }}>
-        <h2 className="heading">Featured <span>Pizzas</span></h2>
+        <h2 className="heading">Featured <span>Products</span></h2>
 
         {loadingProducts ? (
           <ProductGridSkeleton count={4} />
