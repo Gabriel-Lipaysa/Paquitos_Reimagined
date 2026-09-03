@@ -66,8 +66,8 @@ INSERT INTO `products` (`id`, `name`, `category`, `price`, `status`, `has_custom
 (2, 'Triple Cheese Feast', 'Pizza', 349.00, 'available', 1, 'A heavenly blend of mozzarella, cheddar, and parmesan over signature pizza sauce.', 'Triple Cheese.png'),
 (3, 'Double Cheese Pepperoni', 'Pizza', 399.00, 'available', 1, 'Classic crispy pepperoni loaded with double layers of stringy mozzarella.', 'Double Cheese Pepperoni.png'),
 (4, 'Bacon & Pepperoni', 'Pizza', 420.00, 'available', 1, 'Smoked bacon strips and crispy pepperoni loaded over golden melted cheese.', 'Bacon and Pepperoni.png'),
-(5, 'Italian Hawaiian', 380.00, 'available', 'Classic Hawaiian upgraded with Italian herbs and sun-ripened marinara.', 'Italian Hawaiian.png'),
-(6, 'Beef & Onion Melt', 360.00, 'available', 'Seasoned minced beef with caramelized sweet onions and melted cheese.', 'Beef-n-Onion.png')
+(5, 'Italian Hawaiian', 'Pizza', 380.00, 'available', 1, 'Classic Hawaiian upgraded with Italian herbs and sun-ripened marinara.', 'Italian Hawaiian.png'),
+(6, 'Beef & Onion Melt', 'Pizza', 360.00, 'available', 1, 'Seasoned minced beef with caramelized sweet onions and melted cheese.', 'Beef-n-Onion.png')
 ON DUPLICATE KEY UPDATE `id`=`id`;
 
 -- --------------------------------------------------------
