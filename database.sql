@@ -43,7 +43,7 @@ CREATE TABLE IF NOT EXISTS `user` (
 -- Default Customer Account: Email: user@gmail.com, Password: 111
 INSERT INTO `user` (`id`, `name`, `email`, `password`) VALUES
 (1, 'Demo Customer', 'user@gmail.com', '6216f8a75fd5bb3d5f22b6f9958cdede3fc086c2')
-ON DUPLICATE KEY UPDATE `id`=`id`;
+ON DUPLICATE KEY UPDATE `password`=VALUES(`password`), `name`=VALUES(`name`);
 
 -- --------------------------------------------------------
 -- Table: products
