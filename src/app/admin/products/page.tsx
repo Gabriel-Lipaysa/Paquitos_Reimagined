@@ -5,7 +5,6 @@ import { useSearchParams } from 'next/navigation';
 import { Product, ProductStatus, OptionGroup, OptionChoice } from '@/types/database';
 import { useToast } from '@/context/ToastContext';
 import { getImageUrl } from '@/lib/image-helper';
-import { LazyImage } from '@/components/LazyImage';
 import { AdminTableSkeleton } from '@/components/Skeletons';
 
 interface CategoryDetail {
@@ -599,14 +598,13 @@ function AdminProductsContent() {
                     }}
                   >
                     <td style={{ padding: '0.75rem 1rem' }}>
-                      <div style={{ width: '48px', height: '48px', flexShrink: 0 }}>
-                        <LazyImage
-                          src={p.image}
-                          alt={p.name}
-                          aspectRatio="1/1"
-                          style={{ width: '48px', height: '48px', objectFit: 'contain', borderRadius: '6px' }}
-                        />
-                      </div>
+                      <img
+                        src={getImageUrl(p.image)}
+                        alt={p.name}
+                        loading="lazy"
+                        decoding="async"
+                        style={{ width: '48px', height: '48px', objectFit: 'contain', borderRadius: '6px', backgroundColor: 'transparent' }}
+                      />
                     </td>
                     <td style={{ padding: '0.75rem 1rem', fontWeight: 700, color: '#1e293b' }}>
                       {p.name}

@@ -8,7 +8,6 @@ import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/context/ToastContext';
 import { HeartIcon, SearchIcon, ArrowLeftIcon } from '@/components/Icons';
 import { getImageUrl } from '@/lib/image-helper';
-import { LazyImage } from '@/components/LazyImage';
 import { ProductGridSkeleton } from '@/components/Skeletons';
 
 function MenuContent() {
@@ -511,6 +510,7 @@ function MenuContent() {
                     textAlign: 'left',
                     cursor: 'pointer',
                     transition: 'transform 0.2s ease, box-shadow 0.2s ease',
+                    backgroundColor: '#fff',
                   }}
                 >
                   {(() => {
@@ -536,11 +536,11 @@ function MenuContent() {
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'center',
-                          boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+                          boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
                           cursor: 'pointer',
                           color: isFav ? '#dc2626' : '#64748b',
                           transition: 'all 0.2s ease',
-                          zIndex: 2,
+                          zIndex: 10,
                         }}
                       >
                         <HeartIcon size={18} fill={isFav ? '#dc2626' : 'none'} />
@@ -564,24 +564,27 @@ function MenuContent() {
                         letterSpacing: '0.5px',
                         textTransform: 'uppercase',
                         boxShadow: '0 2px 6px rgba(0,0,0,0.2)',
-                        zIndex: 2,
+                        zIndex: 10,
                       }}
                     >
                       {product.status === 'sold_out' ? 'Sold Out' : 'Unavailable'}
                     </span>
                   )}
 
-                  <div style={{ marginBottom: '0.75rem', width: '100%' }}>
-                    <LazyImage
-                      src={product.image}
-                      alt={product.name}
-                      aspectRatio="1/1"
-                      style={{
-                        maxHeight: '180px',
-                        opacity: product.status && product.status !== 'available' ? 0.65 : 1,
-                      }}
-                    />
-                  </div>
+                  <img
+                    src={getImageUrl(product.image)}
+                    alt={product.name}
+                    loading="lazy"
+                    decoding="async"
+                    style={{
+                      width: '100%',
+                      height: '180px',
+                      objectFit: 'contain',
+                      marginBottom: '0.75rem',
+                      backgroundColor: 'transparent',
+                      opacity: product.status && product.status !== 'available' ? 0.65 : 1,
+                    }}
+                  />
 
                   <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '0.35rem' }}>
                     <span style={{ fontSize: '0.72rem', fontWeight: 700, color: '#008C3B', backgroundColor: '#f0fdf4', padding: '2px 8px', borderRadius: '4px' }}>

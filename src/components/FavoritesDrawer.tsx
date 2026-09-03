@@ -7,7 +7,6 @@ import { useToast } from '@/context/ToastContext';
 import { Favorite } from '@/types/database';
 import { HeartIcon, TrashIcon } from './Icons';
 import { getImageUrl } from '@/lib/image-helper';
-import { LazyImage } from './LazyImage';
 
 interface FavoritesDrawerProps {
   isOpen: boolean;
@@ -137,14 +136,13 @@ export const FavoritesDrawer: React.FC<FavoritesDrawerProps> = ({ isOpen, onClos
                     borderRadius: '8px',
                   }}
                 >
-                  <div style={{ width: '60px', height: '60px', flexShrink: 0 }}>
-                    <LazyImage
-                      src={fav.image}
-                      alt={fav.name}
-                      aspectRatio="1/1"
-                      style={{ width: '60px', height: '60px', objectFit: 'contain' }}
-                    />
-                  </div>
+                  <img
+                    src={getImageUrl(fav.image)}
+                    alt={fav.name}
+                    loading="lazy"
+                    decoding="async"
+                    style={{ width: '60px', height: '60px', objectFit: 'contain', backgroundColor: 'transparent' }}
+                  />
                   <div style={{ flex: 1 }}>
                     <h4 style={{ fontSize: '1rem', color: '#222' }}>{fav.name}</h4>
                     <p style={{ color: '#008C3B', fontWeight: 700 }}>₱{Number(fav.price).toFixed(2)}</p>
