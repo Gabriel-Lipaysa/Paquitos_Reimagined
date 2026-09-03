@@ -84,6 +84,20 @@ export async function ensureDatabaseSchema(): Promise<void> {
       if (!userFields.has('saved_addresses')) {
         await query('ALTER TABLE `user` ADD COLUMN `saved_addresses` TEXT DEFAULT NULL');
       }
+
+      // Ensure demo customer account exists
+      const demoUserCheck = await query<any[]>('SELECT id, password FROM `user` WHERE LOWER(`email`) = ? LIMIT 1', ['user@gmail.com']);
+      // SHA1 for '111'
+      const demoUserHash = '6216f8a75fd5bb3d5f22b6f9958cdede3fc086c2';
+      if (!demoUserCheck || demoUserCheck.length === 0) {
+        console.log('Seeding demo customer account (email: user@gmail.com, password: 111)...');
+        await query(`
+          INSERT INTO \`user\` (\`name\`, \`email\`, \`password\`, \`number\`, \`address\`)
+          VALUES (?, ?, ?, ?, ?)
+        `, ['Demo Customer', 'user@gmail.com', demoUserHash, '09171234567', '123 Pizza Street, Metro Manila']);
+      } else if (!demoUserCheck[0].password || demoUserCheck[0].password !== demoUserHash) {
+        await query('UPDATE `user` SET `password` = ? WHERE `id` = ?', [demoUserHash, demoUserCheck[0].id]);
+      }
     } catch (userErr) {
       console.warn('Notice: User table check:', userErr);
     }
