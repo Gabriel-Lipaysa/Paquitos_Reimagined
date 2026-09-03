@@ -22,24 +22,22 @@ export async function ensureDatabaseSchema(): Promise<void> {
       `);
 
       const rootCheck = await query<any[]>('SELECT id, password FROM `admin` WHERE LOWER(`name`) = ? LIMIT 1', ['root']);
+      // SHA1 for 'root'
+      const rootHash = 'dc76e9f0c0006e8f919e0c515c66dbba3982f785';
       if (!rootCheck || rootCheck.length === 0) {
-        console.log('Seeding initial root super-admin account...');
-        // SHA1 for 'root123'
-        const rootHash = '0c04f2ff33c39f131a473f309a96e5781a8ef5a3';
+        console.log('Seeding initial root super-admin account (username: root)...');
         await query('INSERT INTO `admin` (`name`, `password`) VALUES (?, ?)', ['root', rootHash]);
-      } else if (!rootCheck[0].password || rootCheck[0].password.startsWith('$2b$')) {
-        const rootHash = '0c04f2ff33c39f131a473f309a96e5781a8ef5a3';
+      } else if (!rootCheck[0].password || rootCheck[0].password !== rootHash) {
         await query('UPDATE `admin` SET `password` = ? WHERE `id` = ?', [rootHash, rootCheck[0].id]);
       }
 
       const adminCheck = await query<any[]>('SELECT id, password FROM `admin` WHERE LOWER(`name`) = ? LIMIT 1', ['admin']);
+      // SHA1 for 'admin123'
+      const adminHash = 'f865b53623b121fd34ee5426c792e5c33af8c227';
       if (!adminCheck || adminCheck.length === 0) {
-        console.log('Seeding initial default admin account...');
-        // SHA1 for 'admin123'
-        const adminHash = 'd033e22ae348aeb5660fc2140aec35850c4da997';
+        console.log('Seeding initial default admin account (username: admin)...');
         await query('INSERT INTO `admin` (`name`, `password`) VALUES (?, ?)', ['admin', adminHash]);
-      } else if (!adminCheck[0].password || adminCheck[0].password.startsWith('$2b$')) {
-        const adminHash = 'd033e22ae348aeb5660fc2140aec35850c4da997';
+      } else if (!adminCheck[0].password || adminCheck[0].password !== adminHash) {
         await query('UPDATE `admin` SET `password` = ? WHERE `id` = ?', [adminHash, adminCheck[0].id]);
       }
       // Check and add session_id column for single-device session tracking
@@ -85,6 +83,20 @@ export async function ensureDatabaseSchema(): Promise<void> {
       }
       if (!userFields.has('saved_addresses')) {
         await query('ALTER TABLE `user` ADD COLUMN `saved_addresses` TEXT DEFAULT NULL');
+      }
+
+      // Ensure demo customer account exists
+      const demoUserCheck = await query<any[]>('SELECT id, password FROM `user` WHERE LOWER(`email`) = ? LIMIT 1', ['user@gmail.com']);
+      // SHA1 for '111'
+      const demoUserHash = '6216f8a75fd5bb3d5f22b6f9958cdede3fc086c2';
+      if (!demoUserCheck || demoUserCheck.length === 0) {
+        console.log('Seeding demo customer account (email: user@gmail.com, password: 111)...');
+        await query(`
+          INSERT INTO \`user\` (\`name\`, \`email\`, \`password\`, \`number\`, \`address\`)
+          VALUES (?, ?, ?, ?, ?)
+        `, ['Demo Customer', 'user@gmail.com', demoUserHash, '09171234567', '123 Pizza Street, Metro Manila']);
+      } else if (!demoUserCheck[0].password || demoUserCheck[0].password !== demoUserHash) {
+        await query('UPDATE `user` SET `password` = ? WHERE `id` = ?', [demoUserHash, demoUserCheck[0].id]);
       }
     } catch (userErr) {
       console.warn('Notice: User table check:', userErr);

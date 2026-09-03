@@ -1,6 +1,7 @@
 import { AdminRepository } from '../repositories/admin-repo';
 import { hashPassword } from '@/lib/jwt';
 import { Admin } from '../db/schema';
+import { validatePasswordStrength } from '@/validation/auth-schema';
 
 export class AdminService {
   static async getAllAdmins(includeRoot = false): Promise<Admin[]> {
@@ -29,6 +30,11 @@ export class AdminService {
       }
       if (newPass !== confirmPass) {
         return { success: false, message: 'Confirm password not matched!' };
+      }
+
+      const passCheck = validatePasswordStrength(newPass);
+      if (!passCheck.valid) {
+        return { success: false, message: passCheck.error || 'Password does not meet complexity requirements' };
       }
 
       const fullAdmin = await AdminRepository.findByName(current.name);
@@ -71,6 +77,11 @@ export class AdminService {
     }
 
     if (newPassword && newPassword.trim().length > 0) {
+      const passCheck = validatePasswordStrength(newPassword.trim());
+      if (!passCheck.valid) {
+        return { success: false, message: passCheck.error || 'Password does not meet complexity requirements' };
+      }
+
       const passwordHash = hashPassword(newPassword.trim());
       await AdminRepository.updateProfile(adminId, finalName, passwordHash);
       return { success: true, message: `Credentials updated successfully for "${finalName}" (username & password updated)` };

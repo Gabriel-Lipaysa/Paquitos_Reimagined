@@ -8,7 +8,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/context/ToastContext';
 import { HeartIcon, SearchIcon, ArrowLeftIcon } from '@/components/Icons';
 import { getImageUrl } from '@/lib/image-helper';
-import { ProductGridSkeleton } from '@/components/Skeletons';
+import { ProductGridSkeleton, CategoryGridSkeleton } from '@/components/Skeletons';
 
 function MenuContent() {
   const router = useRouter();
@@ -16,7 +16,9 @@ function MenuContent() {
   const initialCategory = searchParams.get('category');
 
   const [products, setProducts] = useState<Product[]>([]);
-  const [categories, setCategories] = useState<string[]>(['Pizza']);
+  const [categories, setCategories] = useState<string[]>([]);
+  const [loadingCategories, setLoadingCategories] = useState(true);
+  const [categoryHeroMap, setCategoryHeroMap] = useState<Record<string, string>>({});
   const [selectedCategory, setSelectedCategory] = useState<string | null>(initialCategory || null);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -31,6 +33,45 @@ function MenuContent() {
     { label: '₱400 - ₱600', value: '600' },
     { label: '₱600 & Above', value: '601' },
   ];
+
+  // Async load categories and category hero images
+  useEffect(() => {
+    let isMounted = true;
+    const loadCategoriesData = async () => {
+      setLoadingCategories(true);
+      try {
+        const [catRes, prodRes] = await Promise.all([
+          fetch('/api/categories'),
+          fetch('/api/products'),
+        ]);
+        const catData = await catRes.json();
+        const prodData = await prodRes.json();
+        if (isMounted) {
+          if (catData.status === 'success' && Array.isArray(catData.data?.categories)) {
+            setCategories(catData.data.categories);
+          }
+          if (prodData.status === 'success' && Array.isArray(prodData.data?.products)) {
+            const heroMap: Record<string, string> = {};
+            prodData.data.products.forEach((p: Product) => {
+              const catKey = (p.category || 'Pizza').toLowerCase();
+              if (!heroMap[catKey] && p.image) {
+                heroMap[catKey] = p.image;
+              }
+            });
+            setCategoryHeroMap(heroMap);
+          }
+        }
+      } catch (err) {
+        console.error('Error loading categories:', err);
+      } finally {
+        if (isMounted) setLoadingCategories(false);
+      }
+    };
+    loadCategoriesData();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   // Fetch all products & categories
   const fetchProducts = async () => {
@@ -124,6 +165,9 @@ function MenuContent() {
 
   // Helper to find a representative image for category card
   const getCategoryHeroImage = (categoryName: string): string => {
+    const matchedImg = categoryHeroMap[categoryName.toLowerCase()];
+    if (matchedImg) return getImageUrl(matchedImg);
+
     const matched = products.find(
       (p) => (p.category || 'Pizza').toLowerCase() === categoryName.toLowerCase() && p.image
     );
@@ -288,6 +332,13 @@ function MenuContent() {
                 </div>
               )}
             </div>
+          ) : loadingCategories ? (
+            <CategoryGridSkeleton count={4} />
+          ) : categories.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '3rem 1rem', background: '#fff', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
+              <h3 style={{ color: '#334155' }}>No menu categories available</h3>
+              <p style={{ color: '#64748b', marginTop: '0.5rem' }}>Please check back shortly.</p>
+            </div>
           ) : (
             /* 4-Column Category Grid: strictly 4 items per row; 1-3 items do not stretch into 2-4 column */
             <div
@@ -336,6 +387,8 @@ function MenuContent() {
                       <img
                         src={heroImg}
                         alt={cat}
+                        loading="lazy"
+                        decoding="async"
                         style={{
                           maxHeight: '140px',
                           maxWidth: '100%',

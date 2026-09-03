@@ -37,8 +37,26 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
     }
   };
 
+  const hasMinLength = password.length >= 8;
+  const hasSpecialChar = /[!@#$%^&*(),.?":{}|<>_~`\-+=;'/\\\[\]]/.test(password);
+  const isPasswordValid = hasMinLength && hasSpecialChar;
+
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (!hasMinLength) {
+      showToast('Password must be at least 8 characters long.', 'warning');
+      return;
+    }
+    if (!hasSpecialChar) {
+      showToast('Password must contain at least one special character (!@#$%^&*...).', 'warning');
+      return;
+    }
+    if (password !== confirmPassword) {
+      showToast('Confirm password does not match!', 'warning');
+      return;
+    }
+
     setSubmitting(true);
     const res = await registerUser(name, email, password, confirmPassword);
     setSubmitting(false);
@@ -184,10 +202,31 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
                 type="password"
                 className="form-control"
                 required
-                placeholder="Create password"
+                placeholder="Create password (8+ chars with special char)"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
               />
+              {/* Live Password Complexity Checklist */}
+              {password.length > 0 && (
+                <div style={{
+                  marginTop: '6px',
+                  padding: '8px 10px',
+                  backgroundColor: '#f8fafc',
+                  border: '1px solid #e2e8f0',
+                  borderRadius: '6px',
+                  fontSize: '0.78rem',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '4px',
+                }}>
+                  <div style={{ color: hasMinLength ? '#16a34a' : '#dc2626', display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 600 }}>
+                    <span>{hasMinLength ? '✓' : '✗'}</span> At least 8 characters
+                  </div>
+                  <div style={{ color: hasSpecialChar ? '#16a34a' : '#dc2626', display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 600 }}>
+                    <span>{hasSpecialChar ? '✓' : '✗'}</span> Contains special character (!@#$%^&*...)
+                  </div>
+                </div>
+              )}
             </div>
             <div className="form-group">
               <label>Confirm Password</label>
