@@ -1,345 +1,150 @@
-# Pizza ETR - Security Implementation Guide
+# 🛡️ Security Policy & Architecture Guide
 
-## Overview
-This document outlines the security vulnerabilities found and fixed in the Pizza ETR application, along with best practices for future development.
+This document outlines the security policies, architecture, and defense mechanisms implemented in **Paquito's Pizza** (Next.js 14, TypeScript, MySQL).
 
 ---
 
-## Security Fixes Applied
+## 📋 Table of Contents
 
-### 1. **SQL Injection Prevention**
-- **Issue**: Direct string interpolation in SQL queries allowed attackers to inject malicious SQL
-- **Fix**: Implemented prepared statements with bound parameters throughout the application
-- **Helper File**: `db_helper.php`
+- [Supported Versions](#supported-versions)
+- [Reporting a Vulnerability](#reporting-a-vulnerability)
+- [Security Architecture & Defenses](#security-architecture--defenses)
+  - [1. Authentication & Session Management](#1-authentication--session-management)
+  - [2. SQL Injection Prevention](#2-sql-injection-prevention)
+  - [3. Cross-Site Scripting (XSS) Protection](#3-cross-site-scripting-xss-protection)
+  - [4. Cross-Site Request Forgery (CSRF) Defense](#4-cross-site-request-forgery-csrf-defense)
+  - [5. Cloud Database & Network Security](#5-cloud-database--network-security)
+  - [6. Input Validation & Type Safety](#6-input-validation--type-safety)
+  - [7. File & Media Upload Security](#7-file--media-upload-security)
+  - [8. Secret & Credential Isolation](#8-secret--credential-isolation)
+- [Production Deployment Security Checklist](#production-deployment-security-checklist)
+- [Best Practices for Developers](#best-practices-for-developers)
 
-**Before (Vulnerable):**
-```php
-$query = "SELECT * FROM admin WHERE name = '$name'";
-$result = mysqli_query($conn, $query);
-```
+---
 
-**After (Secure):**
-```php
-$query = "SELECT * FROM admin WHERE name = ?";
-$result = executeQuery($query, "s", [$name]);
-```
+## 🔒 Supported Versions
 
-### 2. **Cross-Site Scripting (XSS) Prevention**
-- **Issue**: User input was output directly to HTML/JavaScript without escaping
-- **Fix**: Implemented `SecurityHelper::escape()` for all dynamic output
-- **Helper File**: `security_helper.php`
+We actively provide security updates and patches for the following versions:
 
-**Before (Vulnerable):**
-```php
-echo "<script>alert('" . $_SESSION['message'] . "');</script>";
-echo "<div>" . $product['name'] . "</div>";
-```
+| Version | Supported | Notes |
+| :--- | :--- | :--- |
+| **1.0.x (Next.js 14 App Router)** | ✅ Yes | Current active production branch |
+| Legacy PHP Architecture | ❌ No | Completely deprecated & replaced |
 
-**After (Secure):**
-```php
-$msg = json_encode($_SESSION['message'], JSON_HEX_QUOT | JSON_HEX_TAG);
-echo "<script>alert(" . $msg . ");</script>";
-echo "<div>" . SecurityHelper::escape($product['name']) . "</div>";
-```
+---
 
-### 3. **Credential Exposure Prevention**
-- **Issue**: Database and email credentials were hardcoded in PHP files
-- **Fix**: Moved to `.env` file with example `.env.example` provided
-- **Action Required**: Copy `.env.example` to `.env` and fill in credentials
+## 🚨 Reporting a Vulnerability
 
-**Before (Vulnerable):**
-```php
-$mail->Username = 'paquitospizza0@gmail.com';
-$mail->Password = 'lphs lbzs vhhj ndvo';
-```
+If you discover a security vulnerability within this project, please follow responsible disclosure guidelines:
 
-**After (Secure):**
-```php
-// In .env
-EMAIL_USER=your-email@gmail.com
-EMAIL_PASS=your-app-password
-```
+1. **Do not create a public GitHub issue.**
+2. Send an email describing the vulnerability, steps to reproduce, and impact to:
+   - **Security Contact**: `gabriellipaysa@gmail.com`
+3. We will acknowledge receipt within 48 hours and provide a timeline for a patch.
 
-### 4. **Input Validation**
-- **Issue**: User input was not validated or type-checked
-- **Fix**: Implemented comprehensive validation functions in `security_helper.php`
-- **Helper File**: `security_helper.php`
+---
 
-**Examples:**
-```php
-// Validate integer
-$product_id = SecurityHelper::validateInteger($_POST['pid']);
+## 🛡️ Security Architecture & Defenses
 
-// Validate email
-if (!SecurityHelper::validateEmail($email)) {
-    $error = 'Invalid email format';
-}
+### 1. Authentication & Session Management
 
-// Validate required fields
-$missing = SecurityHelper::validateRequired($_POST, ['name', 'email']);
-if (!empty($missing)) {
-    $error = 'Missing: ' . implode(', ', $missing);
-}
-```
+* **Stateless JWT with HTTP-Only Cookies**:
+  * User and Admin authentication tokens are signed with HMAC-SHA256 (`jsonwebtoken`) and stored in **`HttpOnly`** cookies (`paquitos_token` and `paquitos_admin_token`).
+  * Cookies are configured with `SameSite=Lax`, `Path=/`, and `Secure` (enabled automatically in production environments).
+  * JavaScript running in the browser cannot access session cookies, eliminating token theft via malicious scripts or XSS.
+* **Role-Based Access Control (RBAC)**:
+  * Admin endpoints (`/api/admin/*`) strictly verify admin session credentials via `getAdminSessionFromCookies()` before executing business logic.
+  * Tampered, expired, or invalid tokens instantly return `403 Forbidden` or `401 Unauthorized`.
+* **Cryptographic Password Hashing**:
+  * User credentials use industry-standard **Bcrypt** salt-and-hash hashing.
+  * Passwords are never stored in plaintext and cannot be recovered via database inspection.
 
-### 5. **File Upload Security**
-- **Issue**: No validation on file type, size, or path
-- **Fix**: Created `FileUploadHandler` class with comprehensive validation
-- **Helper File**: `file_upload_handler.php`
+---
 
-**Features:**
-- MIME type validation
-- File size limits (5MB default)
-- Directory traversal prevention
-- Unique filename generation
+### 2. SQL Injection Prevention
 
-**Usage:**
-```php
-require 'file_upload_handler.php';
-$uploader = new FileUploadHandler();
-$result = $uploader->upload($_FILES['image']);
+* **Strict Parameterized Queries**:
+  * All database operations utilize the `mysql2/promise` connection pool with parameter placeholders (`?`).
+  * User input is never concatenated or interpolated directly into raw SQL strings.
 
-if ($result['success']) {
-    echo "File uploaded: " . $result['filename'];
-} else {
-    echo "Error: " . $result['error'];
-}
-```
-
-### 6. **Password Hashing** (Recommended for future)
-- **Current**: Using SHA1 for backward compatibility
-- **Recommended**: Migrate to `password_hash()` for new installations
-- **Usage**:
-```php
-// Hash password
-$hash = SecurityHelper::hashPassword($password);
-
-// Verify password
-if (SecurityHelper::verifyPassword($password, $hash)) {
-    // Password correct
-}
+**Secure Implementation Example (`src/server/repositories/product-repo.ts`):**
+```typescript
+// SECURE: Parameterized SQL with mysql2 prepared bindings
+const sql = 'SELECT * FROM products WHERE id = ? LIMIT 1';
+const rows = await query<Product[]>(sql, [productId]);
 ```
 
 ---
 
-## Security Helper Classes
+### 3. Cross-Site Scripting (XSS) Protection
 
-### `db_helper.php`
-Provides safe database query execution with prepared statements.
-
-**Functions:**
-- `executeQuery($query, $types, $params)` - SELECT queries
-- `executeUpdate($query, $types, $params)` - INSERT/UPDATE/DELETE
-- `fetchOne($query, $types, $params)` - Fetch single row
-- `fetchAll($query, $types, $params)` - Fetch multiple rows
-- `getError()` - Get last error message
-
-**Type String:**
-- `s` = string
-- `i` = integer
-- `d` = double/float
-- `b` = blob
-
-### `security_helper.php`
-Provides validation, sanitization, and output escaping.
-
-**Functions:**
-- `escape($value)` - Safely escape HTML
-- `validateEmail($email)` - Validate email format
-- `validateInteger($value)` - Validate and convert to integer
-- `validateString($value, $min, $max)` - Validate string length
-- `sanitizeString($value)` - Sanitize input
-- `validatePhone($phone)` - Validate phone number
-- `hashPassword($password)` - Hash password with bcrypt
-- `verifyPassword($password, $hash)` - Verify password
-- `generateCSRFToken()` - Generate CSRF token
-- `verifyCSRFToken($token)` - Verify CSRF token
-
-### `file_upload_handler.php`
-Provides secure file upload handling.
-
-**Methods:**
-- `upload($file, $custom_dir)` - Upload and validate file
-- `delete($filename, $custom_dir)` - Delete file safely
-- `setMaxSize($bytes)` - Set maximum file size
-- `setAllowedTypes($types)` - Set allowed MIME types
+* **React Virtual DOM Escaping**:
+  * Next.js and React inherently escape string values before rendering them to the DOM, neutralizing standard injection vectors (e.g., `<script>` tags or malicious attributes).
+* **Zero Unsafe Inner HTML**:
+  * The application avoids `dangerouslySetInnerHTML` for user-generated content (e.g., reviews, delivery notes, product names).
+* **Safe CSV/Excel File Generation**:
+  * The sales exporter implements RFC 4180 quotation escaping and BOM (`\uFEFF`) conversion via `Blob`, preventing spreadsheet formula injection.
 
 ---
 
-## Fixed Files
+### 4. Cross-Site Request Forgery (CSRF) Defense
 
-| File | Issues Fixed | Severity |
-|------|-------------|----------|
-| `admin_login.php` | SQL Injection, XSS | CRITICAL |
-| `user_login.php` | SQL Injection, Input Validation | CRITICAL |
-| `index.php` | XSS in Session Message | HIGH |
-| `product_details.php` | SQL Injection, Missing Null Checks, XSS | CRITICAL |
-| `customer_menu.php` | SQL Injection, XSS, Deprecated Functions | CRITICAL |
+* **`SameSite=Lax` Cookie Policy**:
+  * Prevents third-party websites from sending authenticated requests on behalf of logged-in users during cross-origin requests.
+* **JSON API Content-Type Enforcement**:
+  * State-changing mutation routes (`POST`, `PUT`, `DELETE`) require `application/json` payloads, which standard HTML cross-origin form submissions cannot forge without CORS approval.
 
 ---
 
-## Files Requiring Additional Fixes
+### 5. Cloud Database & Network Security
 
-The following files still need to be updated with prepared statements and input validation:
-
-1. **admin_products.php**
-   - Multiple SQL injection points
-   - File upload vulnerability
-   - Priority: CRITICAL
-
-2. **process_order.php**
-   - SQL injection in order processing
-   - Missing input validation
-   - Priority: CRITICAL
-
-3. **cart.php**
-   - Multiple SQL injection points
-   - Missing error handling
-   - Priority: HIGH
-
-4. **admin_orders.php**
-   - LIKE clause SQL injection in search
-   - Priority: HIGH
-
-5. **admin_add_product.php**
-   - File upload vulnerability
-   - SQL injection
-   - Priority: HIGH
+* **Automated Cloud SSL/TLS Negotiation**:
+  * Connection pooling (`src/server/db/index.ts`) detects remote cloud database providers (Aiven, AWS RDS, PlanetScale) and automatically enables TLS encryption (`ssl: { rejectUnauthorized: false }`).
+  * Intercepts unencrypted transit and protects credentials and sensitive customer orders across public networks.
 
 ---
 
-## Best Practices for Future Development
+### 6. Input Validation & Type Safety
 
-### 1. Always Use Prepared Statements
-```php
-// WRONG
-$query = "SELECT * FROM users WHERE id = $id";
-
-// RIGHT
-$query = "SELECT * FROM users WHERE id = ?";
-$result = executeQuery($query, "i", [$id]);
-```
-
-### 2. Always Escape Output
-```php
-// WRONG
-echo $user['name'];
-
-// RIGHT
-echo SecurityHelper::escape($user['name']);
-```
-
-### 3. Validate All User Input
-```php
-// Check type
-$id = SecurityHelper::validateInteger($_POST['id']);
-if ($id === false) {
-    die('Invalid ID');
-}
-
-// Check email
-if (!SecurityHelper::validateEmail($_POST['email'])) {
-    die('Invalid email');
-}
-
-// Check required fields
-$missing = SecurityHelper::validateRequired($_POST, ['name', 'email']);
-if (!empty($missing)) {
-    die('Missing fields: ' . implode(', ', $missing));
-}
-```
-
-### 4. Handle Errors Gracefully
-```php
-$result = executeQuery($query, "s", [$value]);
-
-if (!$result) {
-    error_log("Database error: " . getError());
-    die('An error occurred. Please try again.');
-}
-```
-
-### 5. Use Environment Variables for Secrets
-```php
-// Store in .env file
-DB_HOST=localhost
-DB_NAME=pizza_pizza
-DB_USER=root
-DB_PASS=
-
-// Access in code
-$db_host = $_ENV['DB_HOST'] ?? 'localhost';
-```
-
-### 6. Implement CSRF Protection
-```php
-// Generate token for form
-<input type="hidden" name="csrf_token" value="<?php echo SecurityHelper::generateCSRFToken(); ?>">
-
-// Verify on form submission
-if (!SecurityHelper::verifyCSRFToken($_POST['csrf_token'] ?? '')) {
-    die('CSRF token invalid');
-}
-```
+* **TypeScript Compilation**:
+  * End-to-end type safety between database DTOs, service responses, and frontend component props prevents unintended data structures and type coercion bugs.
+* **Zod Payload Validation**:
+  * API routes validate request bodies with strict schemas before forwarding data to domain repositories.
 
 ---
 
-## Environment Setup
+### 7. File & Media Upload Security
 
-1. **Copy environment template:**
-   ```bash
-   cp .env.example .env
-   ```
-
-2. **Edit `.env` with your credentials:**
-   ```
-   DB_HOST=127.0.0.1
-   DB_NAME=pizza_pizza
-   DB_USER=root
-   DB_PASS=
-   EMAIL_USER=your-email@gmail.com
-   EMAIL_PASS=your-app-password
-   ```
-
-3. **Never commit `.env` to version control!**
-   - Add to `.gitignore`
+* **Cloudinary CDN Asset Pipeline**:
+  * Product images and payment proof screenshots are handled through secure media pipelines.
+  * Direct execution of uploaded executable files (`.php`, `.exe`, `.sh`) is impossible as static media assets are isolated on Cloudinary servers.
 
 ---
 
-## Testing Security
+### 8. Secret & Credential Isolation
 
-### Test SQL Injection Prevention
-Try entering `' OR '1'='1` in login form - should be treated as literal string.
-
-### Test XSS Prevention
-Try entering `<script>alert('XSS')</script>` - should be displayed as text, not executed.
-
-### Test File Upload Validation
-Try uploading a `.php` file - should be rejected.
+* **Environment Variable Protection**:
+  * Database credentials, JWT signing keys, and Cloudinary secrets reside strictly in `.env.local` and `.env`.
+  * `.gitignore` explicitly prevents `.env*` files from being committed into source control.
 
 ---
 
-## Future Improvements
+## 🚀 Production Deployment Security Checklist
 
-1. **Implement CSRF tokens** on all forms
-2. **Rate limiting** on login attempts
-3. **Two-factor authentication** for admin panel
-4. **HTTPS enforcement** in production
-5. **Security headers** (CSP, X-Frame-Options, etc.)
-6. **Input/Output logging** for audit trail
-7. **Regular security audits** and penetration testing
-8. **Migrate to password_hash()** for all new passwords
+Before deploying to production (e.g., Vercel, AWS, Railway, Docker):
 
----
-
-## Support
-
-For questions about security implementation, refer to:
-- [OWASP Top 10](https://owasp.org/www-project-top-ten/)
-- [PHP Security](https://www.php.net/manual/en/security.php)
-- [CWE - Common Weakness Enumeration](https://cwe.mitre.org/)
+- [ ] Set a strong, randomly generated `JWT_SECRET` (at least 64 characters).
+- [ ] Set a distinct, high-entropy `ADMIN_JWT_SECRET`.
+- [ ] Enable `DB_SSL=true` when connecting to remote cloud databases.
+- [ ] Ensure HTTPS is enforced by your domain provider / reverse proxy (Vercel enforces this by default).
+- [ ] Run `npm audit` to verify zero high or critical dependencies.
+- [ ] Ensure `.env.local` is never pushed to public Git repositories.
 
 ---
 
-**Last Updated:** 2026-08-29  
-**Security Level:** Medium (Further hardening recommended)
+## 👨‍💻 Best Practices for Developers
+
+1. **Always Use Repository Query Functions**: Never construct ad-hoc raw SQL strings. Always pass parameters via array bindings in `src/server/repositories/`.
+2. **Never Expose Secrets in Client Bundles**: Variables without `NEXT_PUBLIC_` prefix remain server-only and cannot be leaked to client browsers.
+3. **Verify Auth on New Admin Routes**: Every new `/api/admin/*` route must start with `getAdminSessionFromCookies()`.
+4. **Validate Input Sizes**: Ensure text fields (delivery notes, addresses) have upper bounds to prevent Denial of Service (DoS) memory exhaustion.
