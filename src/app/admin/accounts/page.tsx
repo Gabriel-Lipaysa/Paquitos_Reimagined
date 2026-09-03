@@ -52,8 +52,23 @@ export default function AdminAccountsPage() {
     fetchAdmins();
   }, []);
 
+  const hasRegisterPassLength = pass.length >= 8;
+  const hasRegisterPassSpecial = /[!@#$%^&*(),.?":{}|<>_~`\-+=;'/\\\[\]]/.test(pass);
+
+  const hasEditPassLength = editPass.length >= 8;
+  const hasEditPassSpecial = /[!@#$%^&*(),.?":{}|<>_~`\-+=;'/\\\[\]]/.test(editPass);
+
   const handleRegisterAdmin = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (!hasRegisterPassLength) {
+      showToast('Password must be at least 8 characters long.', 'warning');
+      return;
+    }
+    if (!hasRegisterPassSpecial) {
+      showToast('Password must contain at least one special character (!@#$%^&*...).', 'warning');
+      return;
+    }
     if (pass !== cpass) {
       showToast('Confirm password does not match!', 'warning');
       return;
@@ -95,9 +110,19 @@ export default function AdminAccountsPage() {
     e.preventDefault();
     if (!adminToEdit) return;
 
-    if (editPass && editPass !== editCpass) {
-      showToast('New password confirmation does not match!', 'warning');
-      return;
+    if (editPass) {
+      if (!hasEditPassLength) {
+        showToast('New password must be at least 8 characters long.', 'warning');
+        return;
+      }
+      if (!hasEditPassSpecial) {
+        showToast('New password must contain at least one special character (!@#$%^&*...).', 'warning');
+        return;
+      }
+      if (editPass !== editCpass) {
+        showToast('New password confirmation does not match!', 'warning');
+        return;
+      }
     }
 
     setEditing(true);
@@ -332,10 +357,30 @@ export default function AdminAccountsPage() {
                 <input
                   type="password"
                   className="form-control"
-                  placeholder="Enter new password"
+                  placeholder="Enter new password (8+ chars with special char)"
                   value={editPass}
                   onChange={(e) => setEditPass(e.target.value)}
                 />
+                {editPass.length > 0 && (
+                  <div style={{
+                    marginTop: '6px',
+                    padding: '8px 10px',
+                    backgroundColor: '#f8fafc',
+                    border: '1px solid #e2e8f0',
+                    borderRadius: '6px',
+                    fontSize: '0.78rem',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '4px',
+                  }}>
+                    <div style={{ color: hasEditPassLength ? '#16a34a' : '#dc2626', display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 600 }}>
+                      <span>{hasEditPassLength ? '✓' : '✗'}</span> At least 8 characters
+                    </div>
+                    <div style={{ color: hasEditPassSpecial ? '#16a34a' : '#dc2626', display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 600 }}>
+                      <span>{hasEditPassSpecial ? '✓' : '✗'}</span> Contains special character (!@#$%^&*...)
+                    </div>
+                  </div>
+                )}
               </div>
 
               {editPass && (
@@ -488,10 +533,30 @@ export default function AdminAccountsPage() {
                   type="password"
                   required
                   className="form-control"
-                  placeholder="Enter password"
+                  placeholder="Enter password (8+ chars with special char)"
                   value={pass}
                   onChange={(e) => setPass(e.target.value)}
                 />
+                {pass.length > 0 && (
+                  <div style={{
+                    marginTop: '6px',
+                    padding: '8px 10px',
+                    backgroundColor: '#f8fafc',
+                    border: '1px solid #e2e8f0',
+                    borderRadius: '6px',
+                    fontSize: '0.78rem',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '4px',
+                  }}>
+                    <div style={{ color: hasRegisterPassLength ? '#16a34a' : '#dc2626', display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 600 }}>
+                      <span>{hasRegisterPassLength ? '✓' : '✗'}</span> At least 8 characters
+                    </div>
+                    <div style={{ color: hasRegisterPassSpecial ? '#16a34a' : '#dc2626', display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 600 }}>
+                      <span>{hasRegisterPassSpecial ? '✓' : '✗'}</span> Contains special character (!@#$%^&*...)
+                    </div>
+                  </div>
+                )}
               </div>
 
               <div className="form-group">

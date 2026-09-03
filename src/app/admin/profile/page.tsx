@@ -18,12 +18,29 @@ export default function AdminProfilePage() {
     if (admin) setName(admin.name);
   }, [admin]);
 
+  const hasNewPassLength = newPass.length >= 8;
+  const hasNewPassSpecial = /[!@#$%^&*(),.?":{}|<>_~`\-+=;'/\\\[\]]/.test(newPass);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (newPass && newPass !== confirmPass) {
-      showToast('New passwords do not match!', 'warning');
-      return;
+    if (newPass) {
+      if (!hasNewPassLength) {
+        showToast('New password must be at least 8 characters long.', 'warning');
+        return;
+      }
+      if (!hasNewPassSpecial) {
+        showToast('New password must contain at least one special character (!@#$%^&*...).', 'warning');
+        return;
+      }
+      if (newPass !== confirmPass) {
+        showToast('New passwords do not match!', 'warning');
+        return;
+      }
+      if (!oldPass) {
+        showToast('Please enter your current password to change it', 'warning');
+        return;
+      }
     }
 
     setSubmitting(true);
@@ -107,10 +124,30 @@ export default function AdminProfilePage() {
             <input
               type="password"
               className="form-control"
-              placeholder="Enter new password"
+              placeholder="Enter new password (8+ chars with special char)"
               value={newPass}
               onChange={(e) => setNewPass(e.target.value)}
             />
+            {newPass.length > 0 && (
+              <div style={{
+                marginTop: '6px',
+                padding: '8px 10px',
+                backgroundColor: '#f8fafc',
+                border: '1px solid #e2e8f0',
+                borderRadius: '6px',
+                fontSize: '0.78rem',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '4px',
+              }}>
+                <div style={{ color: hasNewPassLength ? '#16a34a' : '#dc2626', display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 600 }}>
+                  <span>{hasNewPassLength ? '✓' : '✗'}</span> At least 8 characters
+                </div>
+                <div style={{ color: hasNewPassSpecial ? '#16a34a' : '#dc2626', display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 600 }}>
+                  <span>{hasNewPassSpecial ? '✓' : '✗'}</span> Contains special character (!@#$%^&*...)
+                </div>
+              </div>
+            )}
           </div>
 
           <div className="form-group">

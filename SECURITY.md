@@ -52,12 +52,16 @@ If you discover a security vulnerability within this project, please follow resp
   * User and Admin authentication tokens are signed with HMAC-SHA256 (`jsonwebtoken`) and stored in **`HttpOnly`** cookies (`paquitos_token` and `paquitos_admin_token`).
   * Cookies are configured with `SameSite=Lax`, `Path=/`, and `Secure` (enabled automatically in production environments).
   * JavaScript running in the browser cannot access session cookies, eliminating token theft via malicious scripts or XSS.
-* **Role-Based Access Control (RBAC)**:
+* **Role-Based Access Control (RBAC) & Root Authority Isolation**:
+  * Strict separation between the **Root Super-User** (`root`) and standard store administrators (`admin` / employees).
+  * Administrative account creation, modification, and deletion APIs (`/api/admin/accounts/*` and `/api/admin/users/*`) enforce `isRoot` verification. Non-root administrators receive immediate `403 Forbidden` denials.
   * Admin endpoints (`/api/admin/*`) strictly verify admin session credentials via `getAdminSessionFromCookies()` before executing business logic.
-  * Tampered, expired, or invalid tokens instantly return `403 Forbidden` or `401 Unauthorized`.
+* **Password Complexity & Strength Enforcement**:
+  * All customer registrations, administrator creations, and password updates require **minimum 8 characters and at least one special character** (`!@#$%^&*(),.?":{}|<>_~-+=...`).
+  * Server-side and client-side validation rules immediately block non-compliant credentials and provide descriptive error messages.
 * **Cryptographic Password Hashing**:
-  * User credentials use industry-standard **Bcrypt** salt-and-hash hashing.
   * Passwords are never stored in plaintext and cannot be recovered via database inspection.
+  * Hashed securely before persistence into MySQL.
 
 ---
 
