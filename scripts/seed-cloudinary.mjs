@@ -75,12 +75,14 @@ async function runSeed() {
 
   let connection;
   try {
+    const isRemote = dbHost !== '127.0.0.1' && dbHost !== 'localhost' && dbHost !== 'mysql';
     connection = await mysql.createConnection({
       host: dbHost,
       user: dbUser,
       password: dbPassword,
       database: dbName,
       port: dbPort,
+      ssl: isRemote ? { rejectUnauthorized: false } : undefined,
     });
     console.log(`🗄️  Connected to MySQL Database: ${dbUser}@${dbHost}:${dbPort}/${dbName}\n`);
   } catch (err) {
