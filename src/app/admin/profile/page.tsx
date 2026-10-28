@@ -92,10 +92,13 @@ export default function AdminProfilePage() {
       }}>
         <form onSubmit={handleSubmit}>
           <div className="form-group">
-            <label>Admin Username</label>
+            <label htmlFor="admin-profile-username">Admin Username</label>
             <input
+              id="admin-profile-username"
+              name="username"
               type="text"
               required
+              autoComplete="username"
               className="form-control"
               value={name}
               onChange={(e) => setName(e.target.value)}
@@ -109,9 +112,12 @@ export default function AdminProfilePage() {
           </h3>
 
           <div className="form-group">
-            <label>Current Password</label>
+            <label htmlFor="admin-profile-old-pass">Current Password</label>
             <input
+              id="admin-profile-old-pass"
+              name="oldPassword"
               type="password"
+              autoComplete="current-password"
               className="form-control"
               placeholder="Enter current password to change"
               value={oldPass}
@@ -120,9 +126,12 @@ export default function AdminProfilePage() {
           </div>
 
           <div className="form-group">
-            <label>New Password</label>
+            <label htmlFor="admin-profile-new-pass">New Password</label>
             <input
+              id="admin-profile-new-pass"
+              name="newPassword"
               type="password"
+              autoComplete="new-password"
               className="form-control"
               placeholder="Enter new password (8+ chars with special char)"
               value={newPass}
@@ -151,9 +160,12 @@ export default function AdminProfilePage() {
           </div>
 
           <div className="form-group">
-            <label>Confirm New Password</label>
+            <label htmlFor="admin-profile-confirm-pass">Confirm New Password</label>
             <input
+              id="admin-profile-confirm-pass"
+              name="confirmPassword"
               type="password"
+              autoComplete="new-password"
               className="form-control"
               placeholder="Confirm new password"
               value={confirmPass}

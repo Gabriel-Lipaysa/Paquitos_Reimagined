@@ -462,6 +462,9 @@ function AdminProductsContent() {
         marginBottom: '1.5rem',
       }}>
         <input
+          id="admin-search-products"
+          name="searchProducts"
+          aria-label="Search by product name, category, or description"
           type="text"
           className="form-control"
           placeholder="Search by product name, category, or description..."
@@ -617,6 +620,9 @@ function AdminProductsContent() {
                     </td>
                     <td style={{ padding: '0.75rem 1rem' }}>
                       <select
+                        id={`admin-product-row-status-${p.id}`}
+                        name={`productStatus_${p.id}`}
+                        aria-label={`Status for ${p.name}`}
                         value={p.status || 'available'}
                         onChange={(e) => handleQuickStatusChange(p.id, e.target.value as ProductStatus)}
                         style={{
@@ -715,8 +721,10 @@ function AdminProductsContent() {
 
             <form onSubmit={isAddModalOpen ? handleAddSubmit : handleEditSubmit}>
               <div className="form-group">
-                <label>Product Name</label>
+                <label htmlFor="admin-product-name">Product Name</label>
                 <input
+                  id="admin-product-name"
+                  name="name"
                   type="text"
                   required
                   className="form-control"
@@ -728,8 +736,10 @@ function AdminProductsContent() {
 
               {/* Category Selector strictly from existing Database categories */}
               <div className="form-group">
-                <label>Product Category</label>
+                <label htmlFor="admin-product-category">Product Category</label>
                 <select
+                  id="admin-product-category"
+                  name="category"
                   className="form-control"
                   value={category}
                   onChange={(e) => handleCategoryChange(e.target.value)}
@@ -744,8 +754,10 @@ function AdminProductsContent() {
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                 <div className="form-group">
-                  <label>Base Price (₱)</label>
+                  <label htmlFor="admin-product-price">Base Price (₱)</label>
                   <input
+                    id="admin-product-price"
+                    name="price"
                     type="number"
                     step="0.01"
                     required
@@ -756,8 +768,10 @@ function AdminProductsContent() {
                   />
                 </div>
                 <div className="form-group">
-                  <label>Availability Status</label>
+                  <label htmlFor="admin-product-status">Availability Status</label>
                   <select
+                    id="admin-product-status"
+                    name="status"
                     className="form-control"
                     value={status}
                     onChange={(e) => setStatus(e.target.value as ProductStatus)}
@@ -781,8 +795,10 @@ function AdminProductsContent() {
                 marginBottom: '1.5rem',
               }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', margin: 0, fontWeight: 700, fontSize: '0.95rem', color: '#1e293b' }}>
+                  <label htmlFor="admin-product-has-customizations" style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', margin: 0, fontWeight: 700, fontSize: '0.95rem', color: '#1e293b' }}>
                     <input
+                      id="admin-product-has-customizations"
+                      name="hasCustomizations"
                       type="checkbox"
                       checked={hasCustomizations}
                       onChange={(e) => setHasCustomizations(e.target.checked)}
@@ -808,6 +824,9 @@ function AdminProductsContent() {
                       >
                         <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr auto', gap: '0.5rem', alignItems: 'center', marginBottom: '0.75rem' }}>
                           <input
+                            id={`admin-product-optgroup-title-${gIdx}`}
+                            name={`optgroup_title_${gIdx}`}
+                            aria-label={`Option Group ${gIdx + 1} Title`}
                             type="text"
                             required
                             placeholder="Group Title (e.g. Size / Volume, Flavor)"
@@ -816,6 +835,9 @@ function AdminProductsContent() {
                             style={{ padding: '6px 10px', borderRadius: '6px', border: '1px solid #cbd5e1', fontWeight: 700, fontSize: '0.9rem' }}
                           />
                           <select
+                            id={`admin-product-optgroup-type-${gIdx}`}
+                            name={`optgroup_type_${gIdx}`}
+                            aria-label={`Option Group ${gIdx + 1} Type`}
                             value={grp.type}
                             onChange={(e) => updateGroupField(gIdx, 'type', e.target.value)}
                             style={{ padding: '6px 8px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.85rem' }}
@@ -841,6 +863,9 @@ function AdminProductsContent() {
                           {grp.choices.map((ch, cIdx) => (
                             <div key={cIdx} style={{ display: 'flex', gap: '6px', alignItems: 'center', marginBottom: '4px' }}>
                               <input
+                                id={`admin-product-optchoice-name-${gIdx}-${cIdx}`}
+                                name={`optchoice_name_${gIdx}_${cIdx}`}
+                                aria-label={`Choice ${cIdx + 1} Name`}
                                 type="text"
                                 required
                                 placeholder="Choice Name (e.g. 1L, Spicy, Extra Cheese)"
@@ -851,6 +876,9 @@ function AdminProductsContent() {
                               <div style={{ display: 'flex', alignItems: 'center', gap: '2px', flex: 1 }}>
                                 <span style={{ fontSize: '0.8rem', color: '#64748b' }}>+₱</span>
                                 <input
+                                  id={`admin-product-optchoice-price-${gIdx}-${cIdx}`}
+                                  name={`optchoice_price_${gIdx}_${cIdx}`}
+                                  aria-label={`Choice ${cIdx + 1} Extra Price`}
                                   type="number"
                                   step="0.01"
                                   placeholder="0.00"
@@ -902,8 +930,10 @@ function AdminProductsContent() {
               </div>
 
               <div className="form-group">
-                <label>Description</label>
+                <label htmlFor="admin-product-description">Description</label>
                 <textarea
+                  id="admin-product-description"
+                  name="description"
                   className="form-control"
                   rows={3}
                   placeholder="Fresh ingredients, serving size details, flavor description..."
@@ -913,8 +943,10 @@ function AdminProductsContent() {
               </div>
 
               <div className="form-group">
-                <label>Product Image {isAddModalOpen ? '(Required)' : '(Optional - Leave blank to keep existing)'}</label>
+                <label htmlFor="admin-product-image">Product Image {isAddModalOpen ? '(Required)' : '(Optional - Leave blank to keep existing)'}</label>
                 <input
+                  id="admin-product-image"
+                  name="image"
                   type="file"
                   accept="image/*"
                   onChange={handleImageChange}

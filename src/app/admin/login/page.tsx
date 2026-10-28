@@ -59,12 +59,15 @@ export default function AdminLoginPage() {
 
         <form onSubmit={handleAdminLogin}>
           <div className="form-group" style={{ marginBottom: '1.25rem' }}>
-            <label style={{ color: '#cbd5e1', fontSize: '0.9rem', display: 'block', marginBottom: '6px' }}>
+            <label htmlFor="admin-login-username" style={{ color: '#cbd5e1', fontSize: '0.9rem', display: 'block', marginBottom: '6px' }}>
               Admin Username
             </label>
             <input
+              id="admin-login-username"
+              name="username"
               type="text"
               required
+              autoComplete="username"
               className="form-control"
               placeholder="Enter admin username"
               value={name}
@@ -78,12 +81,15 @@ export default function AdminLoginPage() {
           </div>
 
           <div className="form-group" style={{ marginBottom: '1.75rem' }}>
-            <label style={{ color: '#cbd5e1', fontSize: '0.9rem', display: 'block', marginBottom: '6px' }}>
+            <label htmlFor="admin-login-password" style={{ color: '#cbd5e1', fontSize: '0.9rem', display: 'block', marginBottom: '6px' }}>
               Password
             </label>
             <input
+              id="admin-login-password"
+              name="password"
               type="password"
               required
+              autoComplete="current-password"
               className="form-control"
               placeholder="Enter password"
               value={pass}

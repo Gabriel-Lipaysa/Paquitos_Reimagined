@@ -243,6 +243,9 @@ function AdminOrdersContent() {
         marginBottom: '1.5rem',
       }}>
         <input
+          id="admin-search-orders"
+          name="searchOrders"
+          aria-label="Search by customer name, phone, or address"
           type="text"
           className="form-control"
           placeholder="Search by customer name, phone, or address..."
@@ -612,10 +615,12 @@ function AdminOrdersContent() {
 
             <form onSubmit={submitOrderCancellation}>
               <div style={{ marginBottom: '1rem' }}>
-                <label style={{ display: 'block', fontWeight: 700, fontSize: '0.85rem', color: '#334155', marginBottom: '6px' }}>
+                <label htmlFor="admin-cancel-reason" style={{ display: 'block', fontWeight: 700, fontSize: '0.85rem', color: '#334155', marginBottom: '6px' }}>
                   Primary Cancellation Reason:
                 </label>
                 <select
+                  id="admin-cancel-reason"
+                  name="cancelReason"
                   value={cancelCategory}
                   onChange={(e) => setCancelCategory(e.target.value)}
                   className="form-control"
@@ -631,10 +636,12 @@ function AdminOrdersContent() {
               </div>
 
               <div style={{ marginBottom: '1.5rem' }}>
-                <label style={{ display: 'block', fontWeight: 700, fontSize: '0.85rem', color: '#334155', marginBottom: '6px' }}>
+                <label htmlFor="admin-cancel-notes" style={{ display: 'block', fontWeight: 700, fontSize: '0.85rem', color: '#334155', marginBottom: '6px' }}>
                   Additional Notes / Details (Optional):
                 </label>
                 <textarea
+                  id="admin-cancel-notes"
+                  name="cancelNotes"
                   value={cancelCustomNotes}
                   onChange={(e) => setCancelCustomNotes(e.target.value)}
                   className="form-control"

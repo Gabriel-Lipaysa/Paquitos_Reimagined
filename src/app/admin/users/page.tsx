@@ -142,6 +142,9 @@ export default function AdminUsersPage() {
         marginBottom: '1.5rem',
       }}>
         <input
+          id="admin-search-customers"
+          name="searchCustomers"
+          aria-label="Search customers by name or email"
           type="text"
           className="form-control"
           placeholder="Search customers by name or email..."
@@ -230,10 +233,13 @@ export default function AdminUsersPage() {
 
             <form onSubmit={handleAddCustomer}>
               <div className="form-group">
-                <label>Customer Full Name</label>
+                <label htmlFor="admin-new-customer-name">Customer Full Name</label>
                 <input
+                  id="admin-new-customer-name"
+                  name="name"
                   type="text"
                   required
+                  autoComplete="name"
                   className="form-control"
                   placeholder="Enter full name"
                   value={name}
@@ -242,10 +248,13 @@ export default function AdminUsersPage() {
               </div>
 
               <div className="form-group">
-                <label>Email Address</label>
+                <label htmlFor="admin-new-customer-email">Email Address</label>
                 <input
+                  id="admin-new-customer-email"
+                  name="email"
                   type="email"
                   required
+                  autoComplete="email"
                   className="form-control"
                   placeholder="Enter customer email"
                   value={email}
@@ -254,10 +263,13 @@ export default function AdminUsersPage() {
               </div>
 
               <div className="form-group">
-                <label>Account Password</label>
+                <label htmlFor="admin-new-customer-pass">Account Password</label>
                 <input
+                  id="admin-new-customer-pass"
+                  name="password"
                   type="password"
                   required
+                  autoComplete="new-password"
                   className="form-control"
                   placeholder="Enter password (8+ chars with special char)"
                   value={pass}
@@ -286,10 +298,13 @@ export default function AdminUsersPage() {
               </div>
 
               <div className="form-group">
-                <label>Confirm Password</label>
+                <label htmlFor="admin-new-customer-cpass">Confirm Password</label>
                 <input
+                  id="admin-new-customer-cpass"
+                  name="confirmPassword"
                   type="password"
                   required
+                  autoComplete="new-password"
                   className="form-control"
                   placeholder="Confirm account password"
                   value={cpass}

@@ -335,10 +335,13 @@ export default function AdminAccountsPage() {
 
             <form onSubmit={handleSaveEditCredentials}>
               <div className="form-group">
-                <label>Username</label>
+                <label htmlFor="edit-admin-username">Username</label>
                 <input
+                  id="edit-admin-username"
+                  name="username"
                   type="text"
                   required
+                  autoComplete="username"
                   disabled={adminToEdit.name.toLowerCase() === 'root'}
                   className="form-control"
                   placeholder="Admin username"
@@ -353,9 +356,12 @@ export default function AdminAccountsPage() {
               </div>
 
               <div className="form-group">
-                <label>New Password (leave blank to keep unchanged)</label>
+                <label htmlFor="edit-admin-password">New Password (leave blank to keep unchanged)</label>
                 <input
+                  id="edit-admin-password"
+                  name="newPassword"
                   type="password"
+                  autoComplete="new-password"
                   className="form-control"
                   placeholder="Enter new password (8+ chars with special char)"
                   value={editPass}
@@ -385,10 +391,13 @@ export default function AdminAccountsPage() {
 
               {editPass && (
                 <div className="form-group">
-                  <label>Confirm New Password</label>
+                  <label htmlFor="edit-admin-confirm-password">Confirm New Password</label>
                   <input
+                    id="edit-admin-confirm-password"
+                    name="confirmPassword"
                     type="password"
                     required
+                    autoComplete="new-password"
                     className="form-control"
                     placeholder="Confirm new password"
                     value={editCpass}
@@ -516,10 +525,13 @@ export default function AdminAccountsPage() {
 
             <form onSubmit={handleRegisterAdmin}>
               <div className="form-group">
-                <label>Admin Username</label>
+                <label htmlFor="register-admin-username">Admin Username</label>
                 <input
+                  id="register-admin-username"
+                  name="username"
                   type="text"
                   required
+                  autoComplete="username"
                   className="form-control"
                   placeholder="Enter username"
                   value={name}
@@ -528,10 +540,13 @@ export default function AdminAccountsPage() {
               </div>
 
               <div className="form-group">
-                <label>Password</label>
+                <label htmlFor="register-admin-password">Password</label>
                 <input
+                  id="register-admin-password"
+                  name="password"
                   type="password"
                   required
+                  autoComplete="new-password"
                   className="form-control"
                   placeholder="Enter password (8+ chars with special char)"
                   value={pass}
@@ -560,10 +575,13 @@ export default function AdminAccountsPage() {
               </div>
 
               <div className="form-group">
-                <label>Confirm Password</label>
+                <label htmlFor="register-admin-confirm-password">Confirm Password</label>
                 <input
+                  id="register-admin-confirm-password"
+                  name="confirmPassword"
                   type="password"
                   required
+                  autoComplete="new-password"
                   className="form-control"
                   placeholder="Confirm password"
                   value={cpass}

@@ -455,10 +455,12 @@ export default function AdminSalesPage() {
         boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
       }}>
         <div style={{ flex: '1 1 200px' }}>
-          <label style={{ fontSize: '0.85rem', fontWeight: 600, color: '#475569', display: 'block', marginBottom: '4px' }}>
+          <label htmlFor="sales-filter-product" style={{ fontSize: '0.85rem', fontWeight: 600, color: '#475569', display: 'block', marginBottom: '4px' }}>
             Filter by Product
           </label>
           <input
+            id="sales-filter-product"
+            name="productName"
             type="text"
             className="form-control"
             placeholder="Search product name..."
@@ -468,10 +470,12 @@ export default function AdminSalesPage() {
         </div>
 
         <div>
-          <label style={{ fontSize: '0.85rem', fontWeight: 600, color: '#475569', display: 'block', marginBottom: '4px' }}>
+          <label htmlFor="sales-filter-start-date" style={{ fontSize: '0.85rem', fontWeight: 600, color: '#475569', display: 'block', marginBottom: '4px' }}>
             Start Date
           </label>
           <input
+            id="sales-filter-start-date"
+            name="startDate"
             type="date"
             className="form-control"
             value={startDate}
@@ -480,10 +484,12 @@ export default function AdminSalesPage() {
         </div>
 
         <div>
-          <label style={{ fontSize: '0.85rem', fontWeight: 600, color: '#475569', display: 'block', marginBottom: '4px' }}>
+          <label htmlFor="sales-filter-end-date" style={{ fontSize: '0.85rem', fontWeight: 600, color: '#475569', display: 'block', marginBottom: '4px' }}>
             End Date
           </label>
           <input
+            id="sales-filter-end-date"
+            name="endDate"
             type="date"
             className="form-control"
             value={endDate}

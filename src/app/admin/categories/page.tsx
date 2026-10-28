@@ -447,8 +447,10 @@ export default function AdminCategoriesPage() {
 
             <form onSubmit={handleCreateCategory}>
               <div className="form-group">
-                <label>Category Title</label>
+                <label htmlFor="admin-new-category-name">Category Title</label>
                 <input
+                  id="admin-new-category-name"
+                  name="categoryName"
                   type="text"
                   required
                   placeholder="Drinks, Meals, Burgers, Sides, Desserts"
@@ -597,6 +599,9 @@ export default function AdminCategoriesPage() {
                     >
                       <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr auto', gap: '0.5rem', alignItems: 'center', marginBottom: '0.75rem' }}>
                         <input
+                          id={`template-optgroup-title-${gIdx}`}
+                          name={`templateGroup_${gIdx}_title`}
+                          aria-label={`Template Option Group ${gIdx + 1} Title`}
                           type="text"
                           required
                           placeholder="Group Title (e.g. Size / Volume, Flavor)"
@@ -605,6 +610,9 @@ export default function AdminCategoriesPage() {
                           style={{ padding: '6px 10px', borderRadius: '6px', border: '1px solid #cbd5e1', fontWeight: 700, fontSize: '0.9rem' }}
                         />
                         <select
+                          id={`template-optgroup-type-${gIdx}`}
+                          name={`templateGroup_${gIdx}_type`}
+                          aria-label={`Template Option Group ${gIdx + 1} Type`}
                           value={grp.type}
                           onChange={(e) => updateGroupField(gIdx, 'type', e.target.value)}
                           style={{ padding: '6px 8px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.85rem' }}
@@ -629,6 +637,9 @@ export default function AdminCategoriesPage() {
                         {grp.choices.map((ch, cIdx) => (
                           <div key={cIdx} style={{ display: 'flex', gap: '6px', alignItems: 'center', marginBottom: '4px' }}>
                             <input
+                              id={`template-choice-name-${gIdx}-${cIdx}`}
+                              name={`templateChoice_${gIdx}_${cIdx}_name`}
+                              aria-label={`Template Choice ${cIdx + 1} Name`}
                               type="text"
                               required
                               placeholder="Choice Name (e.g. 1L, Spicy, Extra Cheese)"
@@ -639,6 +650,9 @@ export default function AdminCategoriesPage() {
                             <div style={{ display: 'flex', alignItems: 'center', gap: '2px', flex: 1 }}>
                               <span style={{ fontSize: '0.8rem', color: '#64748b' }}>+₱</span>
                               <input
+                                id={`template-choice-price-${gIdx}-${cIdx}`}
+                                name={`templateChoice_${gIdx}_${cIdx}_price`}
+                                aria-label={`Template Choice ${cIdx + 1} Additional Price`}
                                 type="number"
                                 step="0.01"
                                 placeholder="0.00"
