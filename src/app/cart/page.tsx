@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { CartItem, SavedAddress } from '@/types/database';
@@ -9,6 +9,7 @@ import { useToast } from '@/context/ToastContext';
 import { TrashIcon, CartIcon } from '@/components/Icons';
 import { getImageUrl } from '@/lib/image-helper';
 import { CartPageSkeleton } from '@/components/Skeletons';
+import PaymentQrCard from '@/components/PaymentQrCard';
 
 export default function CartPage() {
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
@@ -43,9 +44,40 @@ export default function CartPage() {
   const [pickupNotes, setPickupNotes] = useState('');
   const [placingOrder, setPlacingOrder] = useState(false);
 
+  // Payment Proof Receipt State
+  const [paymentProofFile, setPaymentProofFile] = useState<File | null>(null);
+  const [paymentProofPreview, setPaymentProofPreview] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+
   const { user, refreshStats } = useAuth();
   const { showToast } = useToast();
   const router = useRouter();
+
+  const handleProofChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      showToast('Please select a valid image file (PNG, JPG, WEBP).', 'error');
+      return;
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      showToast('Image file size cannot exceed 10MB.', 'error');
+      return;
+    }
+    setPaymentProofFile(file);
+    setPaymentProofPreview(URL.createObjectURL(file));
+  };
+
+  const handleClearProof = () => {
+    setPaymentProofFile(null);
+    if (paymentProofPreview) {
+      URL.revokeObjectURL(paymentProofPreview);
+      setPaymentProofPreview(null);
+    }
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
 
   const fetchCartAndProfile = async () => {
     if (!user) {
@@ -254,6 +286,30 @@ export default function CartPage() {
 
     setPlacingOrder(true);
 
+    let uploadedProofUrl: string | undefined = undefined;
+    if ((method === 'gcash' || method === 'bank') && paymentProofFile) {
+      try {
+        const proofFormData = new FormData();
+        proofFormData.append('file', paymentProofFile);
+        const uploadRes = await fetch('/api/orders/upload-proof', {
+          method: 'POST',
+          body: proofFormData,
+        });
+        const uploadData = await uploadRes.json();
+        if (uploadRes.ok && uploadData.data?.url) {
+          uploadedProofUrl = uploadData.data.url;
+        } else {
+          showToast(uploadData.message || 'Failed to upload payment receipt proof.', 'error');
+          setPlacingOrder(false);
+          return;
+        }
+      } catch (err: any) {
+        showToast(err?.message || 'Error uploading payment receipt. Please try again.', 'error');
+        setPlacingOrder(false);
+        return;
+      }
+    }
+
     const fullAddress = orderType === 'delivery'
       ? addressText.trim()
       : `Store Pickup (Collection Counter)${pickupNotes ? ` - Notes: ${pickupNotes}` : ''}`;
@@ -274,6 +330,7 @@ export default function CartPage() {
         order_type: orderType,
         address: fullAddress,
         delivery_notes: deliveryNotes.trim() || undefined,
+        payment_proof: uploadedProofUrl,
         lat: mapCoordinates?.lat ?? undefined,
         lng: mapCoordinates?.lng ?? undefined,
         save_address_label: saveAddressToProfile && effectiveLabel ? effectiveLabel : undefined,
@@ -830,6 +887,140 @@ export default function CartPage() {
                       Bank Transfer
                     </button>
                   </div>
+
+                  {/* Dynamic GCash / Bank Transfer Card with QR Code */}
+                  {(method === 'gcash' || method === 'bank') && (
+                    <div>
+                      <PaymentQrCard method={method} amount={grandTotal} />
+
+                      {/* Payment Proof Screenshot Upload Box */}
+                      <div
+                        style={{
+                          backgroundColor: '#f8fafc',
+                          border: '1px solid #e2e8f0',
+                          borderRadius: '12px',
+                          padding: '1.25rem',
+                          marginBottom: '1rem',
+                        }}
+                      >
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem', flexWrap: 'wrap', gap: '4px' }}>
+                          <label
+                            htmlFor="cart-payment-proof-file"
+                            style={{
+                              fontWeight: 700,
+                              fontSize: '0.88rem',
+                              color: '#1e293b',
+                              margin: 0,
+                            }}
+                          >
+                            Upload Payment Screenshot (Receipt)
+                          </label>
+                          <span style={{ fontSize: '0.75rem', color: '#64748b' }}>
+                            Optional now, can also upload in Order History
+                          </span>
+                        </div>
+
+                        <input
+                          ref={fileInputRef}
+                          id="cart-payment-proof-file"
+                          name="cartPaymentProofFile"
+                          type="file"
+                          accept="image/*"
+                          onChange={handleProofChange}
+                          style={{ display: 'none' }}
+                        />
+
+                        {!paymentProofPreview ? (
+                          <div
+                            onClick={() => fileInputRef.current?.click()}
+                            style={{
+                              border: '2px dashed #cbd5e1',
+                              borderRadius: '10px',
+                              padding: '1.5rem',
+                              textAlign: 'center',
+                              backgroundColor: '#fff',
+                              cursor: 'pointer',
+                              transition: 'all 0.2s',
+                            }}
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.borderColor = '#008C3B';
+                              e.currentTarget.style.backgroundColor = '#f0fdf4';
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.borderColor = '#cbd5e1';
+                              e.currentTarget.style.backgroundColor = '#fff';
+                            }}
+                          >
+                            <div style={{ fontSize: '1.8rem', marginBottom: '4px' }}>🧾</div>
+                            <div style={{ fontWeight: 700, color: '#334155', fontSize: '0.9rem' }}>
+                              Click or tap to attach payment screenshot
+                            </div>
+                            <div style={{ fontSize: '0.78rem', color: '#64748b', marginTop: '2px' }}>
+                              PNG, JPG, or WEBP (Max 10MB)
+                            </div>
+                          </div>
+                        ) : (
+                          <div
+                            style={{
+                              border: '1px solid #bbf7d0',
+                              backgroundColor: '#f0fdf4',
+                              borderRadius: '10px',
+                              padding: '0.85rem 1rem',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '1rem',
+                            }}
+                          >
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img
+                              src={paymentProofPreview}
+                              alt="Receipt Preview"
+                              style={{
+                                width: '56px',
+                                height: '56px',
+                                objectFit: 'cover',
+                                borderRadius: '8px',
+                                border: '1px solid #86efac',
+                              }}
+                            />
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                              <div
+                                style={{
+                                  fontSize: '0.85rem',
+                                  fontWeight: 700,
+                                  color: '#166534',
+                                  whiteSpace: 'nowrap',
+                                  overflow: 'hidden',
+                                  textOverflow: 'ellipsis',
+                                }}
+                              >
+                                {paymentProofFile?.name}
+                              </div>
+                              <div style={{ fontSize: '0.74rem', color: '#15803d', marginTop: '2px' }}>
+                                {paymentProofFile ? `${(paymentProofFile.size / (1024 * 1024)).toFixed(2)} MB • Receipt attached` : ''}
+                              </div>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={handleClearProof}
+                              style={{
+                                background: 'none',
+                                border: '1px solid #f87171',
+                                borderRadius: '6px',
+                                color: '#ef4444',
+                                padding: '4px 8px',
+                                fontSize: '0.75rem',
+                                fontWeight: 700,
+                                cursor: 'pointer',
+                              }}
+                            >
+                              Remove
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 {/* Grand Total Summary */}

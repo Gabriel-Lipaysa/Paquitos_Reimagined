@@ -15,9 +15,14 @@ export function getImageUrl(imagePath?: string | null): string {
     return trimmed;
   }
 
-  // If already an absolute path starting with / (e.g. /images/... or /uploaded_img/...)
+  // If already an absolute path starting with / (e.g. /images/... or /uploaded_img/... or /payment_proofs/...)
   if (trimmed.startsWith('/')) {
     return trimmed;
+  }
+
+  // If relative path referencing payment_proofs
+  if (trimmed.startsWith('payment_proofs/')) {
+    return `/${trimmed}`;
   }
 
   // Relative filename from uploaded_img (e.g. "Pepperoni.png" or "11.png")

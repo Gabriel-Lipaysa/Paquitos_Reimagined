@@ -5,6 +5,8 @@ import Link from 'next/link';
 import { Order, OrderItem } from '@/types/database';
 import { useAuth } from '@/context/AuthContext';
 import { OrderCardSkeleton } from '@/components/Skeletons';
+import ReceiptModal from '@/components/ReceiptModal';
+import UploadReceiptModal from '@/components/UploadReceiptModal';
 
 interface OrderWithItems extends Order {
   items?: OrderItem[];
@@ -13,14 +15,12 @@ interface OrderWithItems extends Order {
 export default function OrdersPage() {
   const [orders, setOrders] = useState<OrderWithItems[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedReceiptOrder, setSelectedReceiptOrder] = useState<OrderWithItems | null>(null);
+  const [orderToUploadReceipt, setOrderToUploadReceipt] = useState<OrderWithItems | null>(null);
   const { user } = useAuth();
 
-  useEffect(() => {
-    if (!user) {
-      setLoading(false);
-      return;
-    }
-
+  const fetchOrders = () => {
+    if (!user) return;
     fetch('/api/orders')
       .then((res) => res.json())
       .then((data) => {
@@ -30,6 +30,14 @@ export default function OrdersPage() {
       })
       .catch(console.error)
       .finally(() => setLoading(false));
+  };
+
+  useEffect(() => {
+    if (!user) {
+      setLoading(false);
+      return;
+    }
+    fetchOrders();
   }, [user]);
 
   if (!user && !loading) {
@@ -172,6 +180,124 @@ export default function OrdersPage() {
                   </div>
                 </div>
 
+                {/* Payment & Receipt Status Section */}
+                <div
+                  style={{
+                    backgroundColor: '#ffffff',
+                    borderRadius: '10px',
+                    border: '1px solid #e2e8f0',
+                    padding: '0.85rem 1rem',
+                    marginBottom: '1rem',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    flexWrap: 'wrap',
+                    gap: '0.75rem',
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+                    <div>
+                      <span style={{ fontSize: '0.78rem', color: '#64748b', display: 'block' }}>Payment Status</span>
+                      <strong style={{ fontSize: '0.92rem', color: '#1e293b' }}>{order.method}</strong>
+                    </div>
+
+                    {order.payment_status === 'completed' ? (
+                      <span
+                        style={{
+                          fontSize: '0.78rem',
+                          fontWeight: 700,
+                          backgroundColor: '#dcfce7',
+                          color: '#15803d',
+                          border: '1px solid #86efac',
+                          padding: '3px 10px',
+                          borderRadius: '12px',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '4px',
+                        }}
+                      >
+                        ✓ Payment Verified
+                      </span>
+                    ) : order.payment_proof ? (
+                      <span
+                        style={{
+                          fontSize: '0.78rem',
+                          fontWeight: 700,
+                          backgroundColor: '#fef3c7',
+                          color: '#92400e',
+                          border: '1px solid #fde68a',
+                          padding: '3px 10px',
+                          borderRadius: '12px',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '4px',
+                        }}
+                      >
+                        ⏳ Receipt Submitted (Under Review)
+                      </span>
+                    ) : (
+                      <span
+                        style={{
+                          fontSize: '0.78rem',
+                          fontWeight: 700,
+                          backgroundColor: '#fee2e2',
+                          color: '#991b1b',
+                          border: '1px solid #fecaca',
+                          padding: '3px 10px',
+                          borderRadius: '12px',
+                        }}
+                      >
+                        {order.method.toLowerCase().includes('cash') ? '💵 Pay on Handover' : '⚠️ Unpaid • Proof Needed'}
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Actions for Receipt */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+                    {order.payment_proof && (
+                      <button
+                        type="button"
+                        onClick={() => setSelectedReceiptOrder(order)}
+                        style={{
+                          padding: '5px 12px',
+                          borderRadius: '6px',
+                          border: '1px solid #cbd5e1',
+                          backgroundColor: '#fff',
+                          color: '#0284c7',
+                          fontWeight: 700,
+                          fontSize: '0.8rem',
+                          cursor: 'pointer',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '4px',
+                        }}
+                      >
+                        📷 View Uploaded Receipt
+                      </button>
+                    )}
+
+                    {order.payment_status !== 'completed' &&
+                      (order.method.toLowerCase().includes('gcash') || order.method.toLowerCase().includes('bank')) && (
+                        <button
+                          type="button"
+                          onClick={() => setOrderToUploadReceipt(order)}
+                          style={{
+                            padding: '5px 12px',
+                            borderRadius: '6px',
+                            border: 'none',
+                            backgroundColor: order.payment_proof ? '#f1f5f9' : '#008C3B',
+                            color: order.payment_proof ? '#475569' : '#ffffff',
+                            fontWeight: 700,
+                            fontSize: '0.8rem',
+                            cursor: 'pointer',
+                          }}
+                        >
+                          {order.payment_proof ? '🔄 Change Receipt' : '📤 Upload Payment Receipt'}
+                        </button>
+                      )}
+                  </div>
+                </div>
+
                 {/* Cancellation Reason Notice */}
                 {order.cancellation_reason && (
                   <div style={{
@@ -225,6 +351,32 @@ export default function OrdersPage() {
             );
           })}
         </div>
+      )}
+
+      {/* Receipt Proof Viewer Modal */}
+      {selectedReceiptOrder && selectedReceiptOrder.payment_proof && (
+        <ReceiptModal
+          isOpen={!!selectedReceiptOrder}
+          onClose={() => setSelectedReceiptOrder(null)}
+          receiptUrl={selectedReceiptOrder.payment_proof}
+          orderId={selectedReceiptOrder.id}
+          totalPrice={Number(selectedReceiptOrder.total_price)}
+          customerName={selectedReceiptOrder.name}
+          paymentStatus={selectedReceiptOrder.payment_status}
+          isAdmin={false}
+        />
+      )}
+
+      {/* Post-order Receipt Upload Modal */}
+      {orderToUploadReceipt && (
+        <UploadReceiptModal
+          isOpen={!!orderToUploadReceipt}
+          order={orderToUploadReceipt}
+          onClose={() => setOrderToUploadReceipt(null)}
+          onSuccess={() => {
+            fetchOrders();
+          }}
+        />
       )}
     </div>
   );

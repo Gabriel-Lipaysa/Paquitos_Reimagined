@@ -57,5 +57,5 @@ export async function saveUploadedFile(
   await fs.mkdir(targetDir, { recursive: true });
   await fs.writeFile(path.join(targetDir, fileName), buffer);
 
-  return fileName;
+  return targetSubdir === 'uploaded_img' ? fileName : `/${targetSubdir}/${fileName}`;
 }

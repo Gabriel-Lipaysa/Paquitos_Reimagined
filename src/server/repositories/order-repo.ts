@@ -200,6 +200,27 @@ export class OrderRepository {
     }
   }
 
+  static async updatePaymentProof(id: number, paymentProof: string, connection?: any): Promise<boolean> {
+    await ensureDatabaseSchema();
+    try {
+      if (connection) {
+        const [result]: any = await connection.execute(
+          'UPDATE orders SET payment_proof = ? WHERE id = ?',
+          [paymentProof, id]
+        );
+        return result.affectedRows > 0;
+      }
+      const result: any = await query(
+        'UPDATE orders SET payment_proof = ? WHERE id = ?',
+        [paymentProof, id]
+      );
+      return result.affectedRows > 0;
+    } catch (err) {
+      console.error('Error updating order payment proof:', err);
+      return false;
+    }
+  }
+
   static async updateOrderStatus(
     id: number,
     orderStatus: 'pending' | 'preparing' | 'ready' | 'completed' | 'cancelled',

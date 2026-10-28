@@ -177,6 +177,47 @@ export class OrderService {
     return this.updateOrderStatus(orderId, 'completed');
   }
 
+  static async updatePaymentStatus(
+    orderId: number,
+    status: 'pending' | 'completed'
+  ): Promise<{ success: boolean; message: string }> {
+    const order = await OrderRepository.findById(orderId);
+    if (!order) {
+      return { success: false, message: 'Order not found' };
+    }
+
+    const updated = await OrderRepository.updatePaymentStatus(orderId, status);
+    if (updated) {
+      return {
+        success: true,
+        message: status === 'completed'
+          ? `Payment for Order #${orderId} verified and marked as paid.`
+          : `Payment status for Order #${orderId} set to pending.`,
+      };
+    }
+    return { success: false, message: 'Failed to update payment status' };
+  }
+
+  static async updatePaymentProof(
+    orderId: number,
+    userId: number,
+    paymentProof: string
+  ): Promise<{ success: boolean; message: string }> {
+    const order = await OrderRepository.findById(orderId);
+    if (!order) {
+      return { success: false, message: 'Order not found' };
+    }
+    if (order.user_id !== userId) {
+      return { success: false, message: 'Unauthorized: You can only update your own order' };
+    }
+
+    const updated = await OrderRepository.updatePaymentProof(orderId, paymentProof);
+    if (updated) {
+      return { success: true, message: 'Payment receipt uploaded successfully! Store staff will verify your payment.' };
+    }
+    return { success: false, message: 'Failed to update payment proof' };
+  }
+
   static async deleteOrder(orderId: number): Promise<{ success: boolean; message: string }> {
     const deleted = await OrderRepository.delete(orderId);
     if (deleted) {

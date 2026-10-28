@@ -5,6 +5,7 @@ import { useSearchParams } from 'next/navigation';
 import { Order, OrderItem } from '@/types/database';
 import { useToast } from '@/context/ToastContext';
 import { AdminTableSkeleton } from '@/components/Skeletons';
+import ReceiptModal from '@/components/ReceiptModal';
 
 interface OrderWithItems extends Order {
   items?: OrderItem[];
@@ -64,6 +65,8 @@ function AdminOrdersContent() {
   const [mapOrder, setMapOrder] = useState<OrderWithItems | null>(null);
   const [copiedAddress, setCopiedAddress] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [receiptOrder, setReceiptOrder] = useState<OrderWithItems | null>(null);
+  const [verifyingPaymentId, setVerifyingPaymentId] = useState<number | null>(null);
 
   // Real-time tracking
   const knownOrderIdsRef = useRef<Set<number>>(new Set());
@@ -147,6 +150,31 @@ function AdminOrdersContent() {
       showToast(e?.message || 'Error updating order status', 'error');
     } finally {
       setProcessingId(null);
+    }
+  };
+
+  const handleVerifyPayment = async (order: OrderWithItems, newStatus: 'completed' | 'pending') => {
+    setVerifyingPaymentId(order.id);
+    try {
+      const res = await fetch(`/api/admin/orders/${order.id}/payment`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ payment_status: newStatus }),
+      });
+      const data = await res.json();
+      if (res.ok && data.status === 'success') {
+        showToast(data.message || `Payment status updated for Order #${order.id}`, 'success');
+        if (receiptOrder && receiptOrder.id === order.id) {
+          setReceiptOrder({ ...receiptOrder, payment_status: newStatus });
+        }
+        fetchOrders(true);
+      } else {
+        showToast(data.message || 'Failed to update payment status', 'error');
+      }
+    } catch (e: any) {
+      showToast(e?.message || 'Error updating payment status', 'error');
+    } finally {
+      setVerifyingPaymentId(null);
     }
   };
 
@@ -421,8 +449,82 @@ function AdminOrdersContent() {
                       )}
                     </td>
 
-                    <td style={{ fontSize: '0.85rem', fontWeight: 600 }}>
-                      {order.method}
+                    <td style={{ fontSize: '0.85rem' }}>
+                      <div style={{ fontWeight: 700, color: '#1e293b' }}>{order.method}</div>
+                      <div style={{ marginTop: '4px', display: 'flex', flexDirection: 'column', gap: '4px', alignItems: 'flex-start' }}>
+                        {order.payment_status === 'completed' ? (
+                          <span
+                            style={{
+                              padding: '2px 8px',
+                              borderRadius: '12px',
+                              fontSize: '0.74rem',
+                              fontWeight: 700,
+                              backgroundColor: '#dcfce7',
+                              color: '#15803d',
+                              border: '1px solid #86efac',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '3px',
+                            }}
+                          >
+                            ✓ Paid
+                          </span>
+                        ) : order.payment_proof ? (
+                          <span
+                            style={{
+                              padding: '2px 8px',
+                              borderRadius: '12px',
+                              fontSize: '0.74rem',
+                              fontWeight: 700,
+                              backgroundColor: '#fef3c7',
+                              color: '#92400e',
+                              border: '1px solid #fde68a',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '3px',
+                            }}
+                          >
+                            ⏳ Proof Uploaded
+                          </span>
+                        ) : (
+                          <span
+                            style={{
+                              padding: '2px 8px',
+                              borderRadius: '12px',
+                              fontSize: '0.74rem',
+                              fontWeight: 700,
+                              backgroundColor: '#f1f5f9',
+                              color: '#64748b',
+                              border: '1px solid #e2e8f0',
+                            }}
+                          >
+                            Unpaid
+                          </span>
+                        )}
+
+                        {order.payment_proof && (
+                          <button
+                            type="button"
+                            onClick={() => setReceiptOrder(order)}
+                            title="Click to view submitted payment receipt"
+                            style={{
+                              padding: '3px 8px',
+                              borderRadius: '6px',
+                              border: '1px solid #0284c7',
+                              backgroundColor: '#f0f9ff',
+                              color: '#0284c7',
+                              fontWeight: 700,
+                              fontSize: '0.74rem',
+                              cursor: 'pointer',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '4px',
+                            }}
+                          >
+                            📷 View Receipt
+                          </button>
+                        )}
+                      </div>
                     </td>
 
                     <td style={{ maxWidth: '220px', fontSize: '0.82rem' }}>
@@ -473,6 +575,31 @@ function AdminOrdersContent() {
 
                     <td>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                        {order.payment_proof && order.payment_status !== 'completed' && (
+                          <button
+                            type="button"
+                            disabled={verifyingPaymentId === order.id}
+                            onClick={() => handleVerifyPayment(order, 'completed')}
+                            style={{
+                              padding: '5px 10px',
+                              borderRadius: '6px',
+                              border: 'none',
+                              backgroundColor: '#16a34a',
+                              color: '#fff',
+                              fontWeight: 700,
+                              fontSize: '0.76rem',
+                              cursor: 'pointer',
+                              whiteSpace: 'nowrap',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              gap: '4px',
+                            }}
+                          >
+                            {verifyingPaymentId === order.id ? 'Verifying...' : '✓ Verify Payment'}
+                          </button>
+                        )}
+
                         {currentStatus === 'pending' && (
                           <button
                             type="button"
@@ -907,6 +1034,25 @@ function AdminOrdersContent() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Payment Receipt Verification Modal */}
+      {receiptOrder && receiptOrder.payment_proof && (
+        <ReceiptModal
+          isOpen={!!receiptOrder}
+          onClose={() => setReceiptOrder(null)}
+          receiptUrl={receiptOrder.payment_proof}
+          orderId={receiptOrder.id}
+          totalPrice={Number(receiptOrder.total_price)}
+          customerName={receiptOrder.name}
+          paymentStatus={receiptOrder.payment_status}
+          isAdmin={true}
+          isVerifying={verifyingPaymentId === receiptOrder.id}
+          onVerifyPayment={() => {
+            const nextStatus = receiptOrder.payment_status === 'completed' ? 'pending' : 'completed';
+            handleVerifyPayment(receiptOrder, nextStatus);
+          }}
+        />
       )}
 
       {/* Pulse Animation Style */}
