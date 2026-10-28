@@ -1,4 +1,24 @@
 services:
+  app:
+    build:
+      context: .
+      dockerfile: dockerfile
+    container_name: pizza_app
+    restart: always
+    ports:
+      - '3000:3000'
+    env_file:
+      - .env
+    environment:
+      - DB_HOST=db
+      - DB_PORT=3306
+      - DB_NAME=pizza_pizza
+      - DB_USER=user_dev
+      - DB_PASS=pizza
+    depends_on:
+      db:
+        condition: service_healthy
+
   db:
     image: mysql:8.0
     container_name: pizza_mysql
@@ -7,12 +27,17 @@ services:
       MYSQL_ROOT_PASSWORD: RTX2080ti
       MYSQL_DATABASE: pizza_pizza
       MYSQL_USER: user_dev
-      MYSQL_PASSWORD: pizza
+      MYSQL_PASSWORD: pizzacedssQ1WERT79K":';OLIKOUIJYUHTY'
     volumes: 
       - mysql_data:/var/lib/mysql
       - ./database.sql:/docker-entrypoint-initdb.d/01_init.sql:ro
     ports:
       - '3306:3306'
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-pRTX2080ti"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
 
 volumes:
   mysql_data:
