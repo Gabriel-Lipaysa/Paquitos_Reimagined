@@ -292,7 +292,7 @@ export default function OrdersPage() {
                             cursor: 'pointer',
                           }}
                         >
-                          {order.payment_proof ? '🔄 Change Receipt' : '📤 Upload Payment Receipt'}
+                          {order.payment_proof ? 'Change Receipt' : 'Upload Payment Receipt'}
                         </button>
                       )}
                   </div>
