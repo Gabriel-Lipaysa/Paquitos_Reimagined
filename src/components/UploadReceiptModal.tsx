@@ -331,3 +331,4 @@ export default function UploadReceiptModal({
     </div>
   );
 }
+

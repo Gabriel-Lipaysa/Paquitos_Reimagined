@@ -9,6 +9,70 @@ import { useToast } from '@/context/ToastContext';
 import { HeartIcon, SearchIcon, ArrowLeftIcon } from '@/components/Icons';
 import { getImageUrl } from '@/lib/image-helper';
 import { ProductGridSkeleton, CategoryGridSkeleton } from '@/components/Skeletons';
+import ColdStartBanner from '@/components/ColdStartBanner';
+
+const FALLBACK_OFFLINE_PRODUCTS: Product[] = [
+  {
+    id: 901,
+    name: 'Hawaiian Special',
+    category: 'Pizza',
+    price: 299.0,
+    status: 'available',
+    has_customizations: true,
+    description: 'Sweet juicy pineapple paired with premium smoked ham and rich mozzarella cheese.',
+    image: '/images/Hawaiian1.png',
+  },
+  {
+    id: 902,
+    name: 'Triple Cheese Feast',
+    category: 'Pizza',
+    price: 349.0,
+    status: 'available',
+    has_customizations: true,
+    description: 'A heavenly blend of mozzarella, cheddar, and parmesan over signature pizza sauce.',
+    image: '/images/Triple Cheese.png',
+  },
+  {
+    id: 903,
+    name: 'Double Cheese Pepperoni',
+    category: 'Pizza',
+    price: 399.0,
+    status: 'available',
+    has_customizations: true,
+    description: 'Classic crispy pepperoni loaded with double layers of stringy mozzarella cheese.',
+    image: '/images/home-img-1.png',
+  },
+  {
+    id: 904,
+    name: 'Bacon & Pepperoni',
+    category: 'Pizza',
+    price: 420.0,
+    status: 'available',
+    has_customizations: true,
+    description: 'Smoked bacon strips and crispy pepperoni loaded over golden melted cheese.',
+    image: '/images/home-img-2.png',
+  },
+  {
+    id: 905,
+    name: 'Italian Hawaiian',
+    category: 'Pizza',
+    price: 380.0,
+    status: 'available',
+    has_customizations: true,
+    description: 'Classic Hawaiian upgraded with Italian herbs and sun-ripened marinara.',
+    image: '/images/home-img-3.png',
+  },
+  {
+    id: 906,
+    name: 'Beef & Onion Melt',
+    category: 'Pizza',
+    price: 360.0,
+    status: 'available',
+    has_customizations: true,
+    description: 'Seasoned minced beef with caramelized sweet onions and melted cheese.',
+    image: '/images/home-img-1.png',
+  },
+];
 
 function MenuContent() {
   const router = useRouter();
@@ -23,6 +87,9 @@ function MenuContent() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedPriceTier, setSelectedPriceTier] = useState<string>('all');
+  const [isWakingUp, setIsWakingUp] = useState(false);
+  const [coldStartError, setColdStartError] = useState(false);
+  const [showingOfflineMenu, setShowingOfflineMenu] = useState(false);
   const { user, refreshStats } = useAuth();
   const { showToast } = useToast();
 
@@ -35,50 +102,64 @@ function MenuContent() {
   ];
 
   // Async load categories and category hero images
-  useEffect(() => {
-    let isMounted = true;
-    const loadCategoriesData = async () => {
-      setLoadingCategories(true);
-      try {
-        const [catRes, prodRes] = await Promise.all([
-          fetch('/api/categories'),
-          fetch('/api/products'),
-        ]);
-        const catData = await catRes.json();
-        const prodData = await prodRes.json();
-        if (isMounted) {
-          if (catData.status === 'success' && Array.isArray(catData.data?.categories)) {
-            setCategories(catData.data.categories);
-          }
-          if (prodData.status === 'success' && Array.isArray(prodData.data?.products)) {
-            const fetched = prodData.data.products;
-            const heroMap: Record<string, string> = {};
-            fetched.forEach((p: Product) => {
-              const catKey = (p.category || 'Pizza').toLowerCase();
-              if (!heroMap[catKey] && p.image) {
-                heroMap[catKey] = p.image;
-              }
-            });
-            setCategoryHeroMap(heroMap);
-            // Pre-seed default catalog from initial fetch so user sees items immediately
-            setProducts((prev) => (prev.length === 0 ? fetched : prev));
-          }
-        }
-      } catch (err) {
-        console.error('Error loading categories:', err);
-      } finally {
-        if (isMounted) setLoadingCategories(false);
+  const loadCategoriesData = async () => {
+    setLoadingCategories(true);
+    const wakeTimer = setTimeout(() => setIsWakingUp(true), 3500);
+    try {
+      const [catRes, prodRes] = await Promise.all([
+        fetch('/api/categories'),
+        fetch('/api/products'),
+      ]);
+      const catData = await catRes.json().catch(() => ({ status: 'error' }));
+      const prodData = await prodRes.json().catch(() => ({ status: 'error' }));
+
+      clearTimeout(wakeTimer);
+      setIsWakingUp(false);
+
+      const hasCatError = !catRes.ok || catData.status !== 'success';
+      const hasProdError = !prodRes.ok || prodData.status !== 'success';
+
+      if (hasCatError || hasProdError) {
+        setColdStartError(true);
+      } else {
+        setColdStartError(false);
       }
-    };
+
+      if (catData.status === 'success' && Array.isArray(catData.data?.categories) && catData.data.categories.length > 0) {
+        setCategories(catData.data.categories);
+      }
+      if (prodData.status === 'success' && Array.isArray(prodData.data?.products) && prodData.data.products.length > 0) {
+        const fetched = prodData.data.products;
+        const heroMap: Record<string, string> = {};
+        fetched.forEach((p: Product) => {
+          const catKey = (p.category || 'Pizza').toLowerCase();
+          if (!heroMap[catKey] && p.image) {
+            heroMap[catKey] = p.image;
+          }
+        });
+        setCategoryHeroMap(heroMap);
+        setProducts((prev) => (prev.length === 0 ? fetched : prev));
+      }
+    } catch (err) {
+      clearTimeout(wakeTimer);
+      setIsWakingUp(false);
+      setColdStartError(true);
+      console.error('Error loading categories (cold start):', err);
+    } finally {
+      setLoadingCategories(false);
+    }
+  };
+
+  useEffect(() => {
     loadCategoriesData();
-    return () => {
-      isMounted = false;
-    };
   }, []);
 
   // Fetch all products & categories
   const fetchProducts = async () => {
+    if (showingOfflineMenu) return;
     setLoading(true);
+    const wakeTimer = setTimeout(() => setIsWakingUp(true), 3500);
+
     try {
       const queryParams = new URLSearchParams();
       if (searchTerm) queryParams.set('search', searchTerm);
@@ -86,17 +167,47 @@ function MenuContent() {
       if (selectedCategory) queryParams.set('category', selectedCategory);
 
       const res = await fetch(`/api/products?${queryParams.toString()}`);
-      const data = await res.json();
-      if (data.status === 'success' && data.data) {
+      const data = await res.json().catch(() => ({ status: 'error' }));
+
+      clearTimeout(wakeTimer);
+      setIsWakingUp(false);
+
+      if (res.ok && data.status === 'success' && data.data) {
+        setColdStartError(false);
         setProducts(data.data.products || []);
         if (data.data.categories && data.data.categories.length > 0) {
           setCategories(data.data.categories);
         }
+      } else {
+        setColdStartError(true);
       }
     } catch (e) {
-      console.error(e);
+      clearTimeout(wakeTimer);
+      setIsWakingUp(false);
+      setColdStartError(true);
+      console.error('Fetch products cold start error:', e);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleRetry = () => {
+    setColdStartError(false);
+    setShowingOfflineMenu(false);
+    loadCategoriesData();
+    fetchProducts();
+  };
+
+  const handleToggleOfflineMenu = () => {
+    if (showingOfflineMenu) {
+      setShowingOfflineMenu(false);
+      handleRetry();
+    } else {
+      setShowingOfflineMenu(true);
+      setColdStartError(false);
+      setProducts(FALLBACK_OFFLINE_PRODUCTS);
+      setCategories(['Pizza']);
+      showToast('Loaded offline menu preview with cached items.', 'info');
     }
   };
 
@@ -180,6 +291,15 @@ function MenuContent() {
 
   return (
     <div className="container" style={{ padding: '3rem 1.5rem', minHeight: '80vh' }}>
+      {/* Cold Start / Downtime Health Monitor Banner */}
+      <ColdStartBanner
+        isWakingUp={isWakingUp}
+        isError={coldStartError || (!loading && !loadingCategories && categories.length === 0 && products.length === 0)}
+        onRetry={handleRetry}
+        onShowOfflineMenu={handleToggleOfflineMenu}
+        showingOfflineMenu={showingOfflineMenu}
+      />
+
       {/* ------------------------------------------------------------- */}
       {/* 1. CATEGORY SELECTION HUB (Shown when no category is selected) */}
       {/* ------------------------------------------------------------- */}
@@ -294,6 +414,9 @@ function MenuContent() {
                         alt={product.name}
                         loading="lazy"
                         decoding="async"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).src = '/images/home-img-1.png';
+                        }}
                         style={{
                           width: '100%',
                           height: '170px',
@@ -341,9 +464,38 @@ function MenuContent() {
           ) : loadingCategories ? (
             <CategoryGridSkeleton count={4} />
           ) : categories.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '3rem 1rem', background: '#fff', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
-              <h3 style={{ color: '#334155' }}>No menu categories available</h3>
-              <p style={{ color: '#64748b', marginTop: '0.5rem' }}>Please check back shortly.</p>
+            <div style={{ textAlign: 'center', padding: '3.5rem 1.5rem', background: '#fff', borderRadius: '16px', border: '1px solid #e2e8f0' }}>
+              <div style={{ fontSize: '2.5rem', marginBottom: '0.75rem' }}>☕</div>
+              <h3 style={{ color: '#1e293b', fontWeight: 800 }}>Server is Sleeping or Waking Up</h3>
+              <p style={{ color: '#64748b', marginTop: '0.5rem', maxWidth: '480px', margin: '0.5rem auto 1.5rem' }}>
+                Our database may currently be spinning up from a cold start. You can notify Gabriel directly or browse our offline menu preview.
+              </p>
+              <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'center', flexWrap: 'wrap' }}>
+                <button
+                  type="button"
+                  onClick={handleRetry}
+                  className="btn"
+                  style={{ padding: '0.65rem 1.25rem', fontSize: '0.88rem' }}
+                >
+                  🔄 Retry Connecting
+                </button>
+                <button
+                  type="button"
+                  onClick={handleToggleOfflineMenu}
+                  style={{
+                    padding: '0.65rem 1.25rem',
+                    borderRadius: '8px',
+                    border: '1px solid #94a3b8',
+                    backgroundColor: '#f8fafc',
+                    color: '#334155',
+                    fontWeight: 700,
+                    fontSize: '0.88rem',
+                    cursor: 'pointer',
+                  }}
+                >
+                  📋 Browse Offline Menu
+                </button>
+              </div>
             </div>
           ) : (
             /* 4-Column Category Grid: strictly 4 items per row; 1-3 items do not stretch into 2-4 column */
@@ -395,6 +547,9 @@ function MenuContent() {
                         alt={cat}
                         loading="lazy"
                         decoding="async"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).src = '/images/Hawaiian1.png';
+                        }}
                         style={{
                           maxHeight: '140px',
                           maxWidth: '100%',
@@ -647,6 +802,9 @@ function MenuContent() {
                     alt={product.name}
                     loading="lazy"
                     decoding="async"
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).src = '/images/home-img-1.png';
+                    }}
                     style={{
                       width: '100%',
                       height: '180px',

@@ -363,3 +363,4 @@ export default function PaymentQrCard({ method, amount }: PaymentQrCardProps) {
     </div>
   );
 }
+

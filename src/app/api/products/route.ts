@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { ProductService } from '@/server/services/product-service';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
@@ -14,6 +16,15 @@ export async function GET(req: NextRequest) {
     response.headers.set('Cache-Control', 'public, s-maxage=30, stale-while-revalidate=300');
     return response;
   } catch (error: any) {
-    return NextResponse.json({ status: 'error', message: error?.message || 'Server error' }, { status: 500 });
+    console.error('Products API error (Aiven cold-start / connection delay):', error?.message);
+    return NextResponse.json(
+      {
+        status: 'error',
+        code: 'COLD_START_OR_DOWN',
+        message: 'Database connection delay or cold start. The service is waking up.',
+        error: error?.message || 'Server error',
+      },
+      { status: 503 }
+    );
   }
 }
