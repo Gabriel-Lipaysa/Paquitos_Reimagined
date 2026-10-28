@@ -9,7 +9,9 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
       return NextResponse.json({ status: 'error', message: 'Product not found' }, { status: 404 });
     }
 
-    return NextResponse.json({ status: 'success', data: details });
+    const response = NextResponse.json({ status: 'success', data: details });
+    response.headers.set('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=600');
+    return response;
   } catch (error: any) {
     return NextResponse.json({ status: 'error', message: error?.message || 'Server error' }, { status: 500 });
   }

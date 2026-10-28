@@ -9,7 +9,10 @@ export async function GET(req: NextRequest) {
     const category = searchParams.get('category') || undefined;
 
     const { products, categories } = await ProductService.getProducts(search, price, category, false);
-    return NextResponse.json({ status: 'success', data: { products, categories } });
+    const response = NextResponse.json({ status: 'success', data: { products, categories } });
+    // Edge cache: 30s maxage, 5 min background revalidate
+    response.headers.set('Cache-Control', 'public, s-maxage=30, stale-while-revalidate=300');
+    return response;
   } catch (error: any) {
     return NextResponse.json({ status: 'error', message: error?.message || 'Server error' }, { status: 500 });
   }

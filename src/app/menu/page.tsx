@@ -51,14 +51,17 @@ function MenuContent() {
             setCategories(catData.data.categories);
           }
           if (prodData.status === 'success' && Array.isArray(prodData.data?.products)) {
+            const fetched = prodData.data.products;
             const heroMap: Record<string, string> = {};
-            prodData.data.products.forEach((p: Product) => {
+            fetched.forEach((p: Product) => {
               const catKey = (p.category || 'Pizza').toLowerCase();
               if (!heroMap[catKey] && p.image) {
                 heroMap[catKey] = p.image;
               }
             });
             setCategoryHeroMap(heroMap);
+            // Pre-seed default catalog from initial fetch so user sees items immediately
+            setProducts((prev) => (prev.length === 0 ? fetched : prev));
           }
         }
       } catch (err) {
