@@ -198,6 +198,9 @@ function MenuContent() {
             position: 'relative',
           }}>
             <input
+              id="menu-search-all"
+              name="searchMenu"
+              aria-label="Search any item by name"
               type="text"
               className="form-control"
               placeholder="Search any item by name..."
@@ -496,6 +499,9 @@ function MenuContent() {
             {/* Search Input */}
             <div style={{ flex: '1 1 300px', position: 'relative' }}>
               <input
+                id="menu-search-category"
+                name="searchCategory"
+                aria-label={`Search ${selectedCategory.toLowerCase()}`}
                 type="text"
                 className="form-control"
                 placeholder={`Search ${selectedCategory.toLowerCase()}...`}

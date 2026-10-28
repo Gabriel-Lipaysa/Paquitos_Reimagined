@@ -203,10 +203,13 @@ export default function ProfilePage() {
 
           <form onSubmit={handleProfileSubmit}>
             <div className="form-group">
-              <label>Full Name</label>
+              <label htmlFor="user-profile-name">Full Name</label>
               <input
+                id="user-profile-name"
+                name="name"
                 type="text"
                 required
+                autoComplete="name"
                 className="form-control"
                 placeholder="E.g. Juan Dela Cruz"
                 value={name}
@@ -215,10 +218,13 @@ export default function ProfilePage() {
             </div>
 
             <div className="form-group">
-              <label>Email Address</label>
+              <label htmlFor="user-profile-email">Email Address</label>
               <input
+                id="user-profile-email"
+                name="email"
                 type="email"
                 disabled
+                autoComplete="email"
                 className="form-control"
                 value={profileData?.email || user.email || ''}
                 style={{ backgroundColor: '#f1f5f9', color: '#64748b', cursor: 'not-allowed' }}
@@ -229,9 +235,12 @@ export default function ProfilePage() {
             </div>
 
             <div className="form-group">
-              <label>Default Contact Phone Number</label>
+              <label htmlFor="user-profile-phone">Default Contact Phone Number</label>
               <input
+                id="user-profile-phone"
+                name="phone"
                 type="tel"
+                autoComplete="tel"
                 className="form-control"
                 placeholder="E.g. 0917 123 4567"
                 value={number}
@@ -240,8 +249,11 @@ export default function ProfilePage() {
             </div>
 
             <div className="form-group">
-              <label>Default Delivery Address</label>
+              <label htmlFor="user-profile-address">Default Delivery Address</label>
               <textarea
+                id="user-profile-address"
+                name="address"
+                autoComplete="street-address"
                 className="form-control"
                 rows={3}
                 placeholder="House/Unit #, Street, Barangay, City, Landmark..."
@@ -286,11 +298,14 @@ export default function ProfilePage() {
                   gap: '0.85rem',
                 }}>
                   <div>
-                    <label style={{ fontSize: '0.85rem', fontWeight: 600, color: '#334155', display: 'block', marginBottom: '4px' }}>
+                    <label htmlFor="user-profile-old-pass" style={{ fontSize: '0.85rem', fontWeight: 600, color: '#334155', display: 'block', marginBottom: '4px' }}>
                       Current Password
                     </label>
                     <input
+                      id="user-profile-old-pass"
+                      name="oldPassword"
                       type="password"
+                      autoComplete="current-password"
                       className="form-control"
                       placeholder="Enter your existing password"
                       value={oldPassword}
@@ -298,11 +313,14 @@ export default function ProfilePage() {
                     />
                   </div>
                   <div>
-                    <label style={{ fontSize: '0.85rem', fontWeight: 600, color: '#334155', display: 'block', marginBottom: '4px' }}>
+                    <label htmlFor="user-profile-new-pass" style={{ fontSize: '0.85rem', fontWeight: 600, color: '#334155', display: 'block', marginBottom: '4px' }}>
                       New Password
                     </label>
                     <input
+                      id="user-profile-new-pass"
+                      name="newPassword"
                       type="password"
+                      autoComplete="new-password"
                       className="form-control"
                       placeholder="Enter new secure password (8+ chars with special char)"
                       value={newPassword}
@@ -330,11 +348,14 @@ export default function ProfilePage() {
                     )}
                   </div>
                   <div>
-                    <label style={{ fontSize: '0.85rem', fontWeight: 600, color: '#334155', display: 'block', marginBottom: '4px' }}>
+                    <label htmlFor="user-profile-confirm-pass" style={{ fontSize: '0.85rem', fontWeight: 600, color: '#334155', display: 'block', marginBottom: '4px' }}>
                       Confirm New Password
                     </label>
                     <input
+                      id="user-profile-confirm-pass"
+                      name="confirmPassword"
                       type="password"
+                      autoComplete="new-password"
                       className="form-control"
                       placeholder="Confirm new password"
                       value={confirmPassword}

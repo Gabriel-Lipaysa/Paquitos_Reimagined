@@ -483,9 +483,12 @@ export default function CartPage() {
 
               <form onSubmit={handleCheckout}>
                 <div className="form-group">
-                  <label>Full Name</label>
+                  <label htmlFor="cart-checkout-name">Full Name</label>
                   <input
+                    id="cart-checkout-name"
+                    name="name"
                     type="text"
+                    autoComplete="name"
                     className="form-control"
                     required
                     placeholder="Enter recipient name"
@@ -495,9 +498,12 @@ export default function CartPage() {
                 </div>
 
                 <div className="form-group">
-                  <label>Contact Phone Number</label>
+                  <label htmlFor="cart-checkout-phone">Contact Phone Number</label>
                   <input
+                    id="cart-checkout-phone"
+                    name="phone"
                     type="tel"
+                    autoComplete="tel"
                     className="form-control"
                     required
                     placeholder="E.g. 09123456789"
@@ -571,6 +577,9 @@ export default function CartPage() {
                     }}>
                       <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.75rem' }}>
                         <input
+                          id="cart-address-search"
+                          name="mapSearch"
+                          aria-label="Search street, building, or landmark"
                           type="text"
                           className="form-control"
                           placeholder="Search street, building, or landmark..."
@@ -645,9 +654,12 @@ export default function CartPage() {
 
                     {/* Delivery Address Field */}
                     <div className="form-group">
-                      <label>Complete Street / Location Address</label>
+                      <label htmlFor="cart-delivery-address">Complete Street / Location Address</label>
                       <textarea
+                        id="cart-delivery-address"
+                        name="address"
                         required
+                        autoComplete="street-address"
                         className="form-control"
                         rows={2}
                         placeholder="E.g. Unit 4B Sunshine Towers, 123 Pizza Boulevard, Barangay San Antonio, Makati"
@@ -659,8 +671,10 @@ export default function CartPage() {
 
                     {/* Optional Delivery Information & Instructions */}
                     <div className="form-group">
-                      <label>Additional Delivery Information / Landmarks (Optional)</label>
+                      <label htmlFor="cart-delivery-notes">Additional Delivery Information / Landmarks (Optional)</label>
                       <input
+                        id="cart-delivery-notes"
+                        name="deliveryNotes"
                         type="text"
                         className="form-control"
                         placeholder="E.g. Ring bell at green gate, leave with building lobby guard"
@@ -705,6 +719,9 @@ export default function CartPage() {
 
                         {addressLabel === 'Other' && (
                           <input
+                            id="cart-custom-address-label"
+                            name="customAddressLabel"
+                            aria-label="Custom Address Label"
                             type="text"
                             className="form-control"
                             placeholder="Custom Label Name (e.g. Grandma's House, Studio)"
@@ -714,8 +731,10 @@ export default function CartPage() {
                           />
                         )}
 
-                        <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.82rem', color: '#475569', cursor: 'pointer', margin: 0 }}>
+                        <label htmlFor="cart-save-address-checkbox" style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.82rem', color: '#475569', cursor: 'pointer', margin: 0 }}>
                           <input
+                            id="cart-save-address-checkbox"
+                            name="saveAddressToProfile"
                             type="checkbox"
                             checked={saveAddressToProfile}
                             onChange={(e) => setSaveAddressToProfile(e.target.checked)}
@@ -727,8 +746,10 @@ export default function CartPage() {
                   </div>
                 ) : (
                   <div className="form-group" style={{ marginTop: '1.25rem' }}>
-                    <label>Pickup Instructions / Notes (Optional)</label>
+                    <label htmlFor="cart-pickup-notes">Pickup Instructions / Notes (Optional)</label>
                     <input
+                      id="cart-pickup-notes"
+                      name="pickupNotes"
                       type="text"
                       className="form-control"
                       placeholder="E.g. Pickup at 6:30 PM, please prepare utensils"
