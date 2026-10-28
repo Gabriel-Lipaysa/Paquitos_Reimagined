@@ -233,7 +233,7 @@ export default function OrdersPage() {
                           gap: '4px',
                         }}
                       >
-                        ⏳ Receipt Submitted (Under Review)
+                        Receipt Submitted (Under Review)
                       </span>
                     ) : (
                       <span
@@ -247,7 +247,7 @@ export default function OrdersPage() {
                           borderRadius: '12px',
                         }}
                       >
-                        {order.method.toLowerCase().includes('cash') ? '💵 Pay on Handover' : '⚠️ Unpaid • Proof Needed'}
+                        {order.method.toLowerCase().includes('cash') ? 'Pay on Handover' : 'Unpaid • Proof Needed'}
                       </span>
                     )}
                   </div>
