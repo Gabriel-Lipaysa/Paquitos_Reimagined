@@ -142,9 +142,12 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
         {activeTab === 'login' ? (
           <form onSubmit={handleLogin}>
             <div className="form-group">
-              <label>Email or Username</label>
+              <label htmlFor="customer-login-identifier">Email or Username</label>
               <input
+                id="customer-login-identifier"
+                name="identifier"
                 type="text"
+                autoComplete="username"
                 className="form-control"
                 required
                 placeholder="Enter email or username"
@@ -153,9 +156,12 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
               />
             </div>
             <div className="form-group">
-              <label>Password</label>
+              <label htmlFor="customer-login-password">Password</label>
               <input
+                id="customer-login-password"
+                name="password"
                 type="password"
+                autoComplete="current-password"
                 className="form-control"
                 required
                 placeholder="Enter your password"
@@ -175,9 +181,12 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
         ) : (
           <form onSubmit={handleRegister}>
             <div className="form-group">
-              <label>Full Name</label>
+              <label htmlFor="customer-register-name">Full Name</label>
               <input
+                id="customer-register-name"
+                name="name"
                 type="text"
+                autoComplete="name"
                 className="form-control"
                 required
                 placeholder="Enter your name"
@@ -186,9 +195,12 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
               />
             </div>
             <div className="form-group">
-              <label>Email Address</label>
+              <label htmlFor="customer-register-email">Email Address</label>
               <input
+                id="customer-register-email"
+                name="email"
                 type="email"
+                autoComplete="email"
                 className="form-control"
                 required
                 placeholder="Enter your email"
@@ -197,9 +209,12 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
               />
             </div>
             <div className="form-group">
-              <label>Password</label>
+              <label htmlFor="customer-register-password">Password</label>
               <input
+                id="customer-register-password"
+                name="password"
                 type="password"
+                autoComplete="new-password"
                 className="form-control"
                 required
                 placeholder="Create password (8+ chars with special char)"
@@ -229,9 +244,12 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
               )}
             </div>
             <div className="form-group">
-              <label>Confirm Password</label>
+              <label htmlFor="customer-register-confirm-password">Confirm Password</label>
               <input
+                id="customer-register-confirm-password"
+                name="confirmPassword"
                 type="password"
+                autoComplete="new-password"
                 className="form-control"
                 required
                 placeholder="Confirm password"

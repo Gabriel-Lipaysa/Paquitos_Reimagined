@@ -1,6 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { usePathname } from 'next/navigation';
 import { AuthSession } from '@/types/api';
 
 interface UserStats {
@@ -26,6 +27,9 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const pathname = usePathname();
+  const isAdminRoute = Boolean(pathname?.startsWith('/admin'));
+
   const [user, setUser] = useState<AuthSession | null>(null);
   const [admin, setAdmin] = useState<AuthSession | null>(null);
   const [stats, setStats] = useState<UserStats>({ cartCount: 0, favoritesCount: 0, ordersCount: 0 });
@@ -36,9 +40,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const res = await fetch('/api/auth/me');
       if (res.ok) {
         const json = await res.json();
-        if (json.status === 'success' && json.data) {
+        if (json.status === 'success' && json.data?.user) {
           setUser(json.data.user);
           setStats(json.data.stats || { cartCount: 0, favoritesCount: 0, ordersCount: 0 });
+        } else {
+          setUser(null);
+          setStats({ cartCount: 0, favoritesCount: 0, ordersCount: 0 });
         }
       } else {
         setUser(null);
@@ -55,6 +62,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const json = await res.json();
         if (json.status === 'success' && json.data?.admin) {
           setAdmin({ id: json.data.admin.id, name: json.data.admin.name, role: 'admin' });
+        } else {
+          setAdmin(null);
         }
       } else {
         setAdmin(null);
@@ -65,8 +74,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   useEffect(() => {
-    Promise.all([fetchUserProfile(), fetchAdminProfile()]).finally(() => setLoading(false));
-  }, []);
+    // If navigating inside the admin console, customer profile check (/api/auth/me) is unnecessary
+    if (isAdminRoute) {
+      fetchAdminProfile().finally(() => setLoading(false));
+    } else {
+      Promise.all([fetchUserProfile(), fetchAdminProfile()]).finally(() => setLoading(false));
+    }
+  }, [isAdminRoute]);
 
   const loginUser = async (identifier: string, pass: string) => {
     try {
