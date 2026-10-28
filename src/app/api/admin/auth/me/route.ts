@@ -5,13 +5,19 @@ import { AdminRepository } from '@/server/repositories/admin-repo';
 export async function GET() {
   const session = getAdminSessionFromCookies();
   if (!session) {
-    return NextResponse.json({ status: 'error', message: 'Not authenticated as admin' }, { status: 401 });
+    return NextResponse.json({
+      status: 'success',
+      data: { admin: null },
+    });
   }
 
   const admin = await AdminRepository.findById(session.id);
   if (!admin) {
     clearAdminCookie();
-    return NextResponse.json({ status: 'error', message: 'Admin account not found' }, { status: 404 });
+    return NextResponse.json({
+      status: 'success',
+      data: { admin: null },
+    });
   }
 
   // Real-time verification: check if this device's token matches the single active database session
